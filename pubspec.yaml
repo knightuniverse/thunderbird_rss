@@ -35,17 +35,15 @@ dependencies:
   cupertino_icons: ^1.0.2
   drift: ^1.0.1
   dart_rss: ^2.0.1
+  flutter_html: ^2.1.5
   flutter_mobx: ^2.0.2
   get_it: ^7.2.0
   http: ^0.13.4
   intl: ^0.17.0
-  jaguar: ^3.0.12
-  jaguar_flutter_asset: ^3.0.0
   mobx: ^2.0.5
   path: ^1.8.0
   path_provider: ^2.0.0
   sqlite3_flutter_libs: ^0.5.0
-  webview_flutter: ^2.3.1
   xml: ^5.3.1
 
 dev_dependencies:
@@ -75,7 +73,6 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/post/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
