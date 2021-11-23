@@ -81,6 +81,15 @@ abstract class _FeedBase with Store {
   String link;
   String icon;
 
+  @observable
+  int itemCount = 0;
+
+  @observable
+  int unreadItemCount = 0;
+
+  @observable
+  ObservableList<FeedItem> items = ObservableList<FeedItem>();
+
   final int _limit = 200;
   int _offset = 0;
 
@@ -93,8 +102,6 @@ abstract class _FeedBase with Store {
     this.link = "",
     this.icon = "",
   });
-
-  ObservableList<FeedItem> items = ObservableList<FeedItem>();
 
   @action
   clear() {
@@ -127,6 +134,15 @@ abstract class _FeedBase with Store {
     _offset += _limit;
 
     this.items.addAll(items);
+  }
+
+  @action
+  collectStatistics() async {
+    itemCount = await storage.feedItemsDao.itemCount(id);
+    unreadItemCount = await storage.feedItemsDao.unreadItemCount(id);
+
+    print(itemCount);
+    print(unreadItemCount);
   }
 }
 
@@ -170,7 +186,7 @@ abstract class _AppBase with Store {
       icon: channel.icon ?? "",
     );
 
-    await storage.feedItemsDao.insertItems(
+    await storage.feedItemsDao.insertAll(
       channel.items.map(
         (e) {
           var content = e.content;
@@ -247,17 +263,19 @@ abstract class _AppBase with Store {
       icon: channel.image != null ? channel.image!.url ?? "" : "",
     );
 
-    await storage.feedItemsDao.insertItems(
+    await storage.feedItemsDao.insertAll(
       channel.items.map(
         (e) {
+          var author = e.author;
           var content = e.content;
+          var source = e.source;
           var description = e.description;
           var pubDate = e.pubDate;
 
           return sqlite.FeedItemsCompanion.insert(
             feedId: feedId,
             title: e.title ?? "",
-            author: e.author ?? "",
+            author: author ?? (source != null ? source.value : ""),
             description: description ?? "",
             content: content != null ? content.value : description ?? "",
             link: e.link ?? "",
@@ -446,6 +464,8 @@ abstract class _AppBase with Store {
         ),
       ),
     );
+
+    await Future.wait(feeds.map((element) => element.collectStatistics()));
 
     if (feeds.isNotEmpty) {
       selectedFeed = feeds.first;

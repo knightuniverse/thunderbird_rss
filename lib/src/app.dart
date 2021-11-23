@@ -134,7 +134,7 @@ class _HomePageState extends State<HomePage> {
                               width: iconTheme.size,
                             ) //ImageIcon(NetworkImage(feed.icon))
                           : const Icon(Icons.rss_feed),
-                      title: Text(feed.title),
+                      title: Text(feed.title + "( ${feed.unreadItemCount} )"),
                       onTap: () {
                         _app.checkout(feed);
                       },

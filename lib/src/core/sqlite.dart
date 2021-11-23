@@ -99,9 +99,59 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
         .get();
   }
 
-  insertItems(List<FeedItemsCompanion> entries) async {
+  Future<void> insert(FeedItemsCompanion entry) async {
+    await into(feedItems).insert(entry);
+  }
+
+  Future<void> insertAll(List<FeedItemsCompanion> entries) async {
     await batch((batch) {
       batch.insertAll(feedItems, entries);
     });
+  }
+
+  Future<void> setRead(int id) async {
+    await (update(feedItems)..where((tbl) => tbl.id.equals(id))).write(
+      const FeedItemsCompanion(
+        read: Value<bool>(true),
+      ),
+    );
+  }
+
+  Future<void> setUnread(int id) async {
+    await (update(feedItems)..where((tbl) => tbl.id.equals(id))).write(
+      const FeedItemsCompanion(
+        read: Value<bool>(false),
+      ),
+    );
+  }
+
+  Future<void> setStarred(int id) async {
+    await (update(feedItems)..where((tbl) => tbl.id.equals(id))).write(
+      const FeedItemsCompanion(
+        starred: Value<bool>(true),
+      ),
+    );
+  }
+
+  Future<void> setUnstarred(int id) async {
+    await (update(feedItems)..where((tbl) => tbl.id.equals(id))).write(
+      const FeedItemsCompanion(
+        starred: Value<bool>(false),
+      ),
+    );
+  }
+
+  Future<int> itemCount(int feedId) async {
+    return customSelect(
+      "SELECT COUNT(*) AS c FROM feed_items WHERE feed_id = $feedId",
+      readsFrom: {feedItems},
+    ).map((p0) => p0.read<int>('c')).getSingle();
+  }
+
+  Future<int> unreadItemCount(int feedId) async {
+    return customSelect(
+      "SELECT COUNT(*) AS c FROM feed_items WHERE feed_id = $feedId AND read = 0",
+      readsFrom: {feedItems},
+    ).map((p0) => p0.read<int>('c')).getSingle();
   }
 }
