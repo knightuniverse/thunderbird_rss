@@ -6,6 +6,62 @@ import 'package:get_it/get_it.dart';
 import 'core/sqlite.dart' as sqlite;
 import 'core/models.dart' as model;
 
+class _SubscribeDialog extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() {
+    return _SubscribeDialogState();
+  }
+}
+
+class _SubscribeDialogState extends State<_SubscribeDialog> {
+  final model.App _app = model.App(
+    GetIt.I.get<sqlite.ThunderBirdRSSDataBase>(),
+  );
+
+  final TextEditingController _urlController = TextEditingController();
+
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Column(
+        children: [
+          TextField(
+            autofocus: true,
+            controller: _urlController,
+            decoration: const InputDecoration(
+              labelText: "RSS",
+              hintText: "RSS",
+              prefixIcon: Icon(Icons.person),
+            ),
+          ),
+          ElevatedButton(
+            child: const Text("移动焦点"),
+            onPressed: () async {
+              if (_busy) {
+                return;
+              }
+
+              setState(() {
+                _busy = true;
+              });
+
+              await _app.subscribe(_urlController.text);
+
+              setState(() {
+                _busy = false;
+              });
+
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class ThunderbirdRSSApp extends StatelessWidget {
   const ThunderbirdRSSApp({Key? key}) : super(key: key);
 
@@ -35,99 +91,113 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final model.App app = model.App(
+  final model.App _app = model.App(
     GetIt.I.get<sqlite.ThunderBirdRSSDataBase>(),
   );
 
   @override
   void initState() {
     super.initState();
-    app.init();
-    //  TODO remove
-    app
-        .subscribe("https://developer.apple.com/news/releases/rss/releases.rss")
-        .then((_) => app.checkout(app.feeds.first));
+    _app.init();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {},
+          ),
+        ],
         title: Text(widget.title),
       ),
       body: Row(
         children: [
-          //  what if it's empty feeds
           Container(
             child: Observer(
-              builder: (_) {
-                return ListView.separated(
-                  itemCount: app.feeds.length,
+              builder: (ctx) {
+                final IconThemeData iconTheme = IconTheme.of(ctx);
+                return ListView.builder(
+                  itemCount: _app.feeds.length,
                   itemBuilder: (BuildContext context, int index) {
-                    final feed = app.feeds[index];
+                    final feed = _app.feeds[index];
                     return ListTile(
+                      leading: feed.icon.isNotEmpty
+                          ? SizedBox(
+                              child: Image.network(
+                                feed.icon,
+                                fit: BoxFit.fill,
+                              ),
+                              height: iconTheme.size,
+                              width: iconTheme.size,
+                            ) //ImageIcon(NetworkImage(feed.icon))
+                          : const Icon(Icons.rss_feed),
                       title: Text(feed.title),
                       onTap: () {
-                        app.checkout(feed);
+                        _app.checkout(feed);
                       },
                     );
-                  },
-                  separatorBuilder: (BuildContext context, int index) {
-                    Widget divider1 = const Divider(
-                      color: Colors.blue,
-                    );
-                    Widget divider2 = const Divider(
-                      color: Colors.green,
-                    );
-                    return index % 2 == 0 ? divider1 : divider2;
                   },
                 );
               },
             ),
-            width: 240,
+            width: 250,
           ),
-
+          const VerticalDivider(
+            thickness: 1,
+            width: 2,
+          ),
           Observer(
             builder: (_) {
-              final feed = app.selectedFeed;
+              final feed = _app.selectedFeed;
               return feed != null
                   ? Container(
-                      child: ListView.separated(
+                      child: ListView.builder(
                         itemCount: feed.items.length,
                         itemBuilder: (BuildContext context, int i) {
                           final item = feed.items[i];
                           return ListTile(
                             title: Text(item.title),
                             onTap: () {
-                              app.read(item);
+                              _app.read(item);
                             },
                           );
                         },
-                        separatorBuilder: (BuildContext context, int i) {
-                          Widget divider1 = const Divider(
-                            color: Colors.blue,
-                          );
-                          Widget divider2 = const Divider(
-                            color: Colors.green,
-                          );
-                          return i % 2 == 0 ? divider1 : divider2;
-                        },
                       ),
-                      width: 240,
+                      width: 320,
                     )
                   : Container(
-                      width: 240,
+                      width: 320,
                     );
             },
           ),
-
+          const VerticalDivider(
+            thickness: 1,
+            width: 2,
+          ),
           Observer(
             builder: (_) {
-              final item = app.selectedFeedItem;
+              final item = _app.selectedFeedItem;
               return item != null
                   ? Expanded(
-                      child: Html(
-                        data: item.content,
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: SingleChildScrollView(
+                          child: Padding(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxWidth: 536,
+                              ),
+                              child: Html(
+                                data: item.content,
+                                shrinkWrap: true,
+                              ),
+                            ),
+                            padding: const EdgeInsets.only(left: 32, right: 32),
+                          ),
+                        ),
                       ),
                     )
                   : Container();
@@ -136,7 +206,14 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (ctx) {
+              return _SubscribeDialog();
+            },
+          );
+        },
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.

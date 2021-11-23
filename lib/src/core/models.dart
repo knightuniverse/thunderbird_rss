@@ -1,3 +1,5 @@
+import 'package:html/parser.dart' as htmlparser;
+import 'package:html/dom.dart' as dom;
 import 'package:http/http.dart' as http;
 import 'package:dart_rss/dart_rss.dart';
 import 'package:mobx/mobx.dart';
@@ -12,23 +14,27 @@ _parsePubDate(String pubDate) {
   return DateFormat("EEE, dd MMM yyyy HH:mm:ss Z", "en_US").parse(pubDate);
 }
 
-class FeedItem = FeedItemBase with _$FeedItem;
+class FeedItem = _FeedItemBase with _$FeedItem;
 
-abstract class FeedItemBase with Store {
+abstract class _FeedItemBase with Store {
   final sqlite.ThunderBirdRSSDataBase storage;
 
   int id;
-  String author;
-  String title;
-  String description;
-  String link;
-  String guid;
-  String content;
-  DateTime publishedAt;
+  final String author;
+  final String title;
+  final String description;
+  final String link;
+  final String guid;
+  final String content;
+  final DateTime publishedAt;
+
+  @observable
   bool read = false;
+
+  @observable
   bool starred = false;
 
-  FeedItemBase(
+  _FeedItemBase(
     this.storage, {
     required this.id,
     required this.link,
@@ -41,11 +47,31 @@ abstract class FeedItemBase with Store {
     this.starred = false,
     DateTime? publishedAt,
   }) : publishedAt = publishedAt ?? DateTime.now();
+
+  @action
+  Future<void> setRead() async {
+    read = true;
+  }
+
+  @action
+  Future<void> setUnread() async {
+    read = false;
+  }
+
+  @action
+  Future<void> setStarred() async {
+    starred = true;
+  }
+
+  @action
+  Future<void> setUnstarred() async {
+    starred = false;
+  }
 }
 
-class Feed = FeedBase with _$Feed;
+class Feed = _FeedBase with _$Feed;
 
-abstract class FeedBase with Store {
+abstract class _FeedBase with Store {
   final sqlite.ThunderBirdRSSDataBase storage;
 
   int id;
@@ -58,7 +84,7 @@ abstract class FeedBase with Store {
   final int _limit = 200;
   int _offset = 0;
 
-  FeedBase(
+  _FeedBase(
     this.storage, {
     required this.id,
     required this.url,
@@ -104,9 +130,9 @@ abstract class FeedBase with Store {
   }
 }
 
-class App = AppBase with _$App;
+class App = _AppBase with _$App;
 
-abstract class AppBase with Store {
+abstract class _AppBase with Store {
   final sqlite.ThunderBirdRSSDataBase storage;
 
   @observable
@@ -115,9 +141,138 @@ abstract class AppBase with Store {
   @observable
   FeedItem? selectedFeedItem;
 
+  @observable
   ObservableList<Feed> feeds = ObservableList<Feed>();
 
-  AppBase(this.storage);
+  _AppBase(this.storage);
+
+  @action
+  Future<void> _subscribeAtom(String feedUrl, String xml) async {
+    final channel = AtomFeed.parse(xml);
+
+    final feedId = await storage.feedsDao.insert(
+      sqlite.FeedsCompanion.insert(
+        title: channel.title ?? "",
+        description: channel.subtitle ?? "",
+        link: channel.links.isNotEmpty ? channel.links.first.href ?? "" : "",
+        url: feedUrl,
+        icon: channel.icon ?? "",
+      ),
+    );
+
+    final feed = Feed(
+      storage,
+      id: feedId,
+      title: channel.title ?? "",
+      description: channel.subtitle ?? "",
+      link: channel.links.isNotEmpty ? channel.links.first.href ?? "" : "",
+      url: feedUrl,
+      icon: channel.icon ?? "",
+    );
+
+    await storage.feedItemsDao.insertItems(
+      channel.items.map(
+        (e) {
+          var content = e.content;
+          var pubDate = e.published;
+
+          return sqlite.FeedItemsCompanion.insert(
+            feedId: feedId,
+            author: e.authors.isNotEmpty
+                ? e.authors.map((e) => e.name).join(",")
+                : "",
+            title: e.title ?? "",
+            description: "",
+            content: content ?? "",
+            link: e.links.isNotEmpty ? e.links.first.href ?? "" : "",
+            guid: e.id ?? "",
+            publishedAt:
+                pubDate != null ? DateTime.parse(pubDate) : DateTime.now(),
+          );
+        },
+      ).toList(),
+    );
+
+    feeds.add(feed);
+
+    checkout(feed);
+  }
+
+  @action
+  Future<void> _subscribeRSS(String feedUrl, String xml) async {
+    final channel = RssFeed.parse(xml);
+
+    String icon = "";
+    final source = channel.link;
+    if (source != null) {
+      final html = await http.get(Uri.parse(source));
+      final dom.Document document = htmlparser.parse(html.body);
+      final head = document.getElementsByTagName("head").first;
+      head.getElementsByTagName("link").forEach((element) {
+        RegExp iconPattern = RegExp(
+          r"(\.jpg|\.png|\.ico)$",
+          caseSensitive: false,
+        );
+        element.attributes.values.forEach((value) {
+          if (iconPattern.hasMatch(value)) {
+            icon = value;
+          }
+        });
+      });
+
+      icon = icon.startsWith("https:") || icon.startsWith("http:")
+          ? icon
+          : icon.startsWith("//")
+              ? Uri.parse(source).scheme + ":" + icon
+              : Uri.parse(source + icon).toString();
+    }
+
+    final feedId = await storage.feedsDao.insert(
+      sqlite.FeedsCompanion.insert(
+        title: channel.title ?? "",
+        description: channel.description ?? "",
+        link: channel.link ?? "",
+        url: feedUrl,
+        icon: icon,
+      ),
+    );
+
+    final feed = Feed(
+      storage,
+      id: feedId,
+      url: feedUrl,
+      title: channel.title ?? "",
+      description: channel.description ?? "",
+      link: channel.link ?? "",
+      icon: channel.image != null ? channel.image!.url ?? "" : "",
+    );
+
+    await storage.feedItemsDao.insertItems(
+      channel.items.map(
+        (e) {
+          var content = e.content;
+          var description = e.description;
+          var pubDate = e.pubDate;
+
+          return sqlite.FeedItemsCompanion.insert(
+            feedId: feedId,
+            title: e.title ?? "",
+            author: e.author ?? "",
+            description: description ?? "",
+            content: content != null ? content.value : description ?? "",
+            link: e.link ?? "",
+            guid: e.guid ?? "",
+            publishedAt:
+                pubDate != null ? _parsePubDate(pubDate) : DateTime.now(),
+          );
+        },
+      ).toList(),
+    );
+
+    feeds.add(feed);
+
+    checkout(feed);
+  }
 
   @action
   Future<void> subscribe(String feedUrl) async {
@@ -128,123 +283,151 @@ abstract class AppBase with Store {
     final isAtom = doc.findAllElements('feed').isNotEmpty;
 
     if (isRss) {
-      final channel = RssFeed.parse(xml);
+      return _subscribeRSS(feedUrl, xml);
 
-      final feedId = await storage.feedsDao.insert(
-        sqlite.FeedsCompanion.insert(
-          title: channel.title ?? "",
-          description: channel.description ?? "",
-          link: channel.link ?? "",
-          url: feedUrl,
-          icon: channel.image != null ? channel.image!.url ?? "" : "",
-        ),
-      );
+      // final channel = RssFeed.parse(xml);
 
-      final feed = Feed(
-        storage,
-        id: feedId,
-        url: feedUrl,
-        title: channel.title ?? "",
-        description: channel.description ?? "",
-        link: channel.link ?? "",
-        icon: channel.image != null ? channel.image!.url ?? "" : "",
-      );
+      // String icon = "";
+      // final source = channel.link;
+      // if (source != null) {
+      //   final html = await http.get(Uri.parse(source));
+      //   final dom.Document document = htmlparser.parse(html.body);
+      //   final head = document.getElementsByTagName("head").first;
+      //   head.getElementsByTagName("link").forEach((element) {
+      //     if (element.attributes.containsValue("apple-touch-icon")) {
+      //       icon = element.attributes["href"] ?? "";
+      //     }
+      //   });
 
-      await storage.feedItemsDao.insertItems(
-        channel.items.map(
-          (e) {
-            var content = e.content;
-            var pubDate = e.pubDate;
+      //   icon = icon.startsWith("https:") || icon.startsWith("http:")
+      //       ? icon
+      //       : icon.startsWith("//")
+      //           ? Uri.parse(source).scheme + ":" + icon
+      //           : Uri.parse(source + icon).toString();
+      // }
 
-            return sqlite.FeedItemsCompanion.insert(
-              feedId: feedId,
-              title: e.title ?? "",
-              author: e.author ?? "",
-              description: e.description ?? "",
-              content: content != null ? content.value : "",
-              link: e.link ?? "",
-              guid: e.guid ?? "",
-              publishedAt:
-                  pubDate != null ? _parsePubDate(pubDate) : DateTime.now(),
-            );
-          },
-        ).toList(),
-      );
+      // final feedId = await storage.feedsDao.insert(
+      //   sqlite.FeedsCompanion.insert(
+      //     title: channel.title ?? "",
+      //     description: channel.description ?? "",
+      //     link: channel.link ?? "",
+      //     url: feedUrl,
+      //     icon: icon,
+      //   ),
+      // );
 
-      feeds.add(feed);
+      // final feed = Feed(
+      //   storage,
+      //   id: feedId,
+      //   url: feedUrl,
+      //   title: channel.title ?? "",
+      //   description: channel.description ?? "",
+      //   link: channel.link ?? "",
+      //   icon: channel.image != null ? channel.image!.url ?? "" : "",
+      // );
+
+      // await storage.feedItemsDao.insertItems(
+      //   channel.items.map(
+      //     (e) {
+      //       var content = e.content;
+      //       var description = e.description;
+      //       var pubDate = e.pubDate;
+
+      //       return sqlite.FeedItemsCompanion.insert(
+      //         feedId: feedId,
+      //         title: e.title ?? "",
+      //         author: e.author ?? "",
+      //         description: description ?? "",
+      //         content: content != null ? content.value : description ?? "",
+      //         link: e.link ?? "",
+      //         guid: e.guid ?? "",
+      //         publishedAt:
+      //             pubDate != null ? _parsePubDate(pubDate) : DateTime.now(),
+      //       );
+      //     },
+      //   ).toList(),
+      // );
+
+      // feeds.add(feed);
+
+      // checkout(feed);
     }
 
     if (isAtom) {
-      final channel = AtomFeed.parse(xml);
+      return _subscribeAtom(feedUrl, xml);
 
-      final feedId = await storage.feedsDao.insert(
-        sqlite.FeedsCompanion.insert(
-          title: channel.title ?? "",
-          description: channel.subtitle ?? "",
-          link: channel.links.isNotEmpty ? channel.links.first.href ?? "" : "",
-          url: feedUrl,
-          icon: channel.icon ?? "",
-        ),
-      );
+      // final channel = AtomFeed.parse(xml);
 
-      final feed = Feed(
-        storage,
-        id: feedId,
-        title: channel.title ?? "",
-        description: channel.subtitle ?? "",
-        link: channel.links.isNotEmpty ? channel.links.first.href ?? "" : "",
-        url: feedUrl,
-        icon: channel.icon ?? "",
-      );
+      // final feedId = await storage.feedsDao.insert(
+      //   sqlite.FeedsCompanion.insert(
+      //     title: channel.title ?? "",
+      //     description: channel.subtitle ?? "",
+      //     link: channel.links.isNotEmpty ? channel.links.first.href ?? "" : "",
+      //     url: feedUrl,
+      //     icon: channel.icon ?? "",
+      //   ),
+      // );
 
-      feed.items.addAll(
-        channel.items.map(
-          (e) {
-            var content = e.content;
-            var pubDate = e.published;
+      // final feed = Feed(
+      //   storage,
+      //   id: feedId,
+      //   title: channel.title ?? "",
+      //   description: channel.subtitle ?? "",
+      //   link: channel.links.isNotEmpty ? channel.links.first.href ?? "" : "",
+      //   url: feedUrl,
+      //   icon: channel.icon ?? "",
+      // );
 
-            return FeedItem(
-              storage,
-              id: 0,
-              author: e.authors.isNotEmpty
-                  ? e.authors.map((e) => e.name).join(",")
-                  : "",
-              title: e.title ?? "",
-              description: "",
-              content: content ?? "",
-              link: e.links.isNotEmpty ? e.links.first.href ?? "" : "",
-              guid: e.id ?? "",
-              publishedAt:
-                  pubDate != null ? DateTime.parse(pubDate) : DateTime.now(),
-            );
-          },
-        ),
-      );
+      // feed.items.addAll(
+      //   channel.items.map(
+      //     (e) {
+      //       var content = e.content;
+      //       var pubDate = e.published;
 
-      await storage.feedItemsDao.insertItems(
-        channel.items.map(
-          (e) {
-            var content = e.content;
-            var pubDate = e.published;
+      //       return FeedItem(
+      //         storage,
+      //         id: 0,
+      //         author: e.authors.isNotEmpty
+      //             ? e.authors.map((e) => e.name).join(",")
+      //             : "",
+      //         title: e.title ?? "",
+      //         description: "",
+      //         content: content ?? "",
+      //         link: e.links.isNotEmpty ? e.links.first.href ?? "" : "",
+      //         guid: e.id ?? "",
+      //         publishedAt:
+      //             pubDate != null ? DateTime.parse(pubDate) : DateTime.now(),
+      //       );
+      //     },
+      //   ),
+      // );
 
-            return sqlite.FeedItemsCompanion.insert(
-              feedId: feedId,
-              author: e.authors.isNotEmpty
-                  ? e.authors.map((e) => e.name).join(",")
-                  : "",
-              title: e.title ?? "",
-              description: "",
-              content: content ?? "",
-              link: e.links.isNotEmpty ? e.links.first.href ?? "" : "",
-              guid: e.id ?? "",
-              publishedAt:
-                  pubDate != null ? DateTime.parse(pubDate) : DateTime.now(),
-            );
-          },
-        ).toList(),
-      );
+      // await storage.feedItemsDao.insertItems(
+      //   channel.items.map(
+      //     (e) {
+      //       var content = e.content;
+      //       var pubDate = e.published;
 
-      feeds.add(feed);
+      //       return sqlite.FeedItemsCompanion.insert(
+      //         feedId: feedId,
+      //         author: e.authors.isNotEmpty
+      //             ? e.authors.map((e) => e.name).join(",")
+      //             : "",
+      //         title: e.title ?? "",
+      //         description: "",
+      //         content: content ?? "",
+      //         link: e.links.isNotEmpty ? e.links.first.href ?? "" : "",
+      //         guid: e.id ?? "",
+      //         publishedAt:
+      //             pubDate != null ? DateTime.parse(pubDate) : DateTime.now(),
+      //       );
+      //     },
+      //   ).toList(),
+      // );
+
+      // feeds.add(feed);
+
+      // checkout(feed);
     }
   }
 
@@ -263,6 +446,7 @@ abstract class AppBase with Store {
         ),
       ),
     );
+
     if (feeds.isNotEmpty) {
       selectedFeed = feeds.first;
     }
@@ -278,5 +462,4 @@ abstract class AppBase with Store {
   void read(FeedItem item) {
     selectedFeedItem = item;
   }
-
 }
