@@ -88,7 +88,7 @@ abstract class _FeedBase with Store {
   int unreadItemCount = 0;
 
   @observable
-  ObservableList<FeedItem> items = ObservableList<FeedItem>();
+  ObservableList<FeedItem> items = ObservableList<FeedItem>.of([]);
 
   final int _limit = 200;
   int _offset = 0;
@@ -158,7 +158,7 @@ abstract class _AppBase with Store {
   FeedItem? selectedFeedItem;
 
   @observable
-  ObservableList<Feed> feeds = ObservableList<Feed>();
+  ObservableList<Feed> feeds = ObservableList<Feed>.of([]);
 
   _AppBase(this.storage);
 
@@ -256,11 +256,11 @@ abstract class _AppBase with Store {
     final feed = Feed(
       storage,
       id: feedId,
-      url: feedUrl,
       title: channel.title ?? "",
       description: channel.description ?? "",
       link: channel.link ?? "",
-      icon: channel.image != null ? channel.image!.url ?? "" : "",
+      url: feedUrl,
+      icon: icon,
     );
 
     await storage.feedItemsDao.insertAll(
@@ -302,150 +302,10 @@ abstract class _AppBase with Store {
 
     if (isRss) {
       return _subscribeRSS(feedUrl, xml);
-
-      // final channel = RssFeed.parse(xml);
-
-      // String icon = "";
-      // final source = channel.link;
-      // if (source != null) {
-      //   final html = await http.get(Uri.parse(source));
-      //   final dom.Document document = htmlparser.parse(html.body);
-      //   final head = document.getElementsByTagName("head").first;
-      //   head.getElementsByTagName("link").forEach((element) {
-      //     if (element.attributes.containsValue("apple-touch-icon")) {
-      //       icon = element.attributes["href"] ?? "";
-      //     }
-      //   });
-
-      //   icon = icon.startsWith("https:") || icon.startsWith("http:")
-      //       ? icon
-      //       : icon.startsWith("//")
-      //           ? Uri.parse(source).scheme + ":" + icon
-      //           : Uri.parse(source + icon).toString();
-      // }
-
-      // final feedId = await storage.feedsDao.insert(
-      //   sqlite.FeedsCompanion.insert(
-      //     title: channel.title ?? "",
-      //     description: channel.description ?? "",
-      //     link: channel.link ?? "",
-      //     url: feedUrl,
-      //     icon: icon,
-      //   ),
-      // );
-
-      // final feed = Feed(
-      //   storage,
-      //   id: feedId,
-      //   url: feedUrl,
-      //   title: channel.title ?? "",
-      //   description: channel.description ?? "",
-      //   link: channel.link ?? "",
-      //   icon: channel.image != null ? channel.image!.url ?? "" : "",
-      // );
-
-      // await storage.feedItemsDao.insertItems(
-      //   channel.items.map(
-      //     (e) {
-      //       var content = e.content;
-      //       var description = e.description;
-      //       var pubDate = e.pubDate;
-
-      //       return sqlite.FeedItemsCompanion.insert(
-      //         feedId: feedId,
-      //         title: e.title ?? "",
-      //         author: e.author ?? "",
-      //         description: description ?? "",
-      //         content: content != null ? content.value : description ?? "",
-      //         link: e.link ?? "",
-      //         guid: e.guid ?? "",
-      //         publishedAt:
-      //             pubDate != null ? _parsePubDate(pubDate) : DateTime.now(),
-      //       );
-      //     },
-      //   ).toList(),
-      // );
-
-      // feeds.add(feed);
-
-      // checkout(feed);
     }
 
     if (isAtom) {
       return _subscribeAtom(feedUrl, xml);
-
-      // final channel = AtomFeed.parse(xml);
-
-      // final feedId = await storage.feedsDao.insert(
-      //   sqlite.FeedsCompanion.insert(
-      //     title: channel.title ?? "",
-      //     description: channel.subtitle ?? "",
-      //     link: channel.links.isNotEmpty ? channel.links.first.href ?? "" : "",
-      //     url: feedUrl,
-      //     icon: channel.icon ?? "",
-      //   ),
-      // );
-
-      // final feed = Feed(
-      //   storage,
-      //   id: feedId,
-      //   title: channel.title ?? "",
-      //   description: channel.subtitle ?? "",
-      //   link: channel.links.isNotEmpty ? channel.links.first.href ?? "" : "",
-      //   url: feedUrl,
-      //   icon: channel.icon ?? "",
-      // );
-
-      // feed.items.addAll(
-      //   channel.items.map(
-      //     (e) {
-      //       var content = e.content;
-      //       var pubDate = e.published;
-
-      //       return FeedItem(
-      //         storage,
-      //         id: 0,
-      //         author: e.authors.isNotEmpty
-      //             ? e.authors.map((e) => e.name).join(",")
-      //             : "",
-      //         title: e.title ?? "",
-      //         description: "",
-      //         content: content ?? "",
-      //         link: e.links.isNotEmpty ? e.links.first.href ?? "" : "",
-      //         guid: e.id ?? "",
-      //         publishedAt:
-      //             pubDate != null ? DateTime.parse(pubDate) : DateTime.now(),
-      //       );
-      //     },
-      //   ),
-      // );
-
-      // await storage.feedItemsDao.insertItems(
-      //   channel.items.map(
-      //     (e) {
-      //       var content = e.content;
-      //       var pubDate = e.published;
-
-      //       return sqlite.FeedItemsCompanion.insert(
-      //         feedId: feedId,
-      //         author: e.authors.isNotEmpty
-      //             ? e.authors.map((e) => e.name).join(",")
-      //             : "",
-      //         title: e.title ?? "",
-      //         description: "",
-      //         content: content ?? "",
-      //         link: e.links.isNotEmpty ? e.links.first.href ?? "" : "",
-      //         guid: e.id ?? "",
-      //         publishedAt:
-      //             pubDate != null ? DateTime.parse(pubDate) : DateTime.now(),
-      //       );
-      //     },
-      //   ).toList(),
-      // );
-
-      // feeds.add(feed);
-
-      // checkout(feed);
     }
   }
 
