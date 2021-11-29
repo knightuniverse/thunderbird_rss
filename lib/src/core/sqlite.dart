@@ -20,6 +20,7 @@ class FeedItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
   TextColumn get author => text()();
+  TextColumn get source => text()();
   TextColumn get description => text()();
   TextColumn get content => text()();
   TextColumn get link => text().customConstraint("UNIQUE")();

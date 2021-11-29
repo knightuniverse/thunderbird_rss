@@ -20,8 +20,9 @@ abstract class _FeedItemBase with Store {
   final sqlite.ThunderBirdRSSDataBase storage;
 
   int id;
-  final String author;
   final String title;
+  final String author;
+  final String source;
   final String description;
   final String link;
   final String guid;
@@ -38,8 +39,9 @@ abstract class _FeedItemBase with Store {
     this.storage, {
     required this.id,
     required this.link,
-    this.author = "",
     this.title = "",
+    this.author = "",
+    this.source = "",
     this.description = "",
     this.guid = "",
     this.content = "",
@@ -50,21 +52,25 @@ abstract class _FeedItemBase with Store {
 
   @action
   Future<void> setRead() async {
+    storage.feedItemsDao.setRead(id);
     read = true;
   }
 
   @action
   Future<void> setUnread() async {
+    storage.feedItemsDao.setUnread(id);
     read = false;
   }
 
   @action
   Future<void> setStarred() async {
+    storage.feedItemsDao.setStarred(id);
     starred = true;
   }
 
   @action
   Future<void> setUnstarred() async {
+    storage.feedItemsDao.setUnstarred(id);
     starred = false;
   }
 }
@@ -140,9 +146,6 @@ abstract class _FeedBase with Store {
   collectStatistics() async {
     itemCount = await storage.feedItemsDao.itemCount(id);
     unreadItemCount = await storage.feedItemsDao.unreadItemCount(id);
-
-    print(itemCount);
-    print(unreadItemCount);
   }
 }
 
@@ -191,13 +194,15 @@ abstract class _AppBase with Store {
         (e) {
           var content = e.content;
           var pubDate = e.published;
+          var authors = e.authors;
+          var source = e.source;
 
           return sqlite.FeedItemsCompanion.insert(
             feedId: feedId,
-            author: e.authors.isNotEmpty
-                ? e.authors.map((e) => e.name).join(",")
-                : "",
             title: e.title ?? "",
+            author:
+                authors.isNotEmpty ? authors.map((e) => e.name).join(",") : "",
+            source: source != null ? source.title ?? "" : "",
             description: "",
             content: content ?? "",
             link: e.links.isNotEmpty ? e.links.first.href ?? "" : "",
@@ -275,7 +280,8 @@ abstract class _AppBase with Store {
           return sqlite.FeedItemsCompanion.insert(
             feedId: feedId,
             title: e.title ?? "",
-            author: author ?? (source != null ? source.value : ""),
+            author: author ?? "",
+            source: source != null ? source.value : "",
             description: description ?? "",
             content: content != null ? content.value : description ?? "",
             link: e.link ?? "",
@@ -341,5 +347,7 @@ abstract class _AppBase with Store {
   @action
   void read(FeedItem item) {
     selectedFeedItem = item;
+
+    item.setRead();
   }
 }
