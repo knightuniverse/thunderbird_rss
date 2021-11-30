@@ -186,7 +186,7 @@ class _FeedItem extends StatelessWidget {
               images.isEmpty
                   ? Text(
                       item.title,
-                      style: theme.textTheme.subtitle1,
+                      style: theme.textTheme.subtitle2,
                     )
                   : Row(
                       children: [
@@ -194,7 +194,7 @@ class _FeedItem extends StatelessWidget {
                           child: Text(
                             item.title,
                             softWrap: true,
-                            style: theme.textTheme.subtitle1,
+                            style: theme.textTheme.subtitle2,
                           ),
                         ),
                         const SizedBox(
@@ -249,7 +249,7 @@ class _FeedItemContent extends StatelessWidget {
 
                   Text(
                     item.title,
-                    style: theme.textTheme.headline2,
+                    style: theme.textTheme.headline1,
                   ),
 
                   item.author.isNotEmpty
@@ -429,21 +429,22 @@ class ThunderbirdRSSApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         textTheme: const TextTheme(
           headline1: TextStyle(
-            fontSize: 96,
-            fontWeight: FontWeight.w300,
+            color: Colors.black,
+            fontSize: 48,
+            fontWeight: FontWeight.w500,
             letterSpacing: -1.5,
           ),
           headline2: TextStyle(
-            fontSize: 60,
+            fontSize: 40,
             fontWeight: FontWeight.w300,
             letterSpacing: -0.5,
           ),
           headline3: TextStyle(
-            fontSize: 48,
-            fontWeight: FontWeight.w400,
+            fontSize: 32,
+            fontWeight: FontWeight.w500,
           ),
           headline4: TextStyle(
-            fontSize: 34,
+            fontSize: 32,
             fontWeight: FontWeight.w400,
             letterSpacing: 0.25,
           ),
@@ -467,14 +468,16 @@ class ThunderbirdRSSApp extends StatelessWidget {
             letterSpacing: 0.1,
           ),
           bodyText1: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
             letterSpacing: 0.5,
+            height: 1.5,
           ),
           bodyText2: TextStyle(
-            fontSize: 14,
+            fontSize: 16,
             fontWeight: FontWeight.w400,
             letterSpacing: 0.25,
+            height: 1.5,
           ),
           button: TextStyle(
             fontSize: 14,
@@ -487,7 +490,8 @@ class ThunderbirdRSSApp extends StatelessWidget {
             letterSpacing: 0.4,
           ),
           overline: TextStyle(
-            fontSize: 10,
+            color: Color(0xFF666666),
+            fontSize: 12,
             fontWeight: FontWeight.w400,
             letterSpacing: 1.5,
           ),
@@ -576,10 +580,10 @@ class HomePage extends StatelessWidget {
               return feed != null
                   ? Container(
                       child: _Feed(feed),
-                      width: 320,
+                      width: 360,
                     )
                   : Container(
-                      width: 320,
+                      width: 360,
                     );
             },
           ),
