@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -225,6 +227,41 @@ class _FeedItemContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bodyText2 = Style(
+      color: theme.textTheme.bodyText2?.color,
+      fontSize: FontSize(
+        theme.textTheme.bodyText2?.fontSize,
+      ),
+      fontWeight: theme.textTheme.bodyText2?.fontWeight,
+      letterSpacing: theme.textTheme.bodyText2?.letterSpacing,
+    );
+    final caption = Style(
+      color: theme.textTheme.caption?.color,
+      fontSize: FontSize(
+        theme.textTheme.caption?.fontSize,
+      ),
+      fontWeight: theme.textTheme.caption?.fontWeight,
+      letterSpacing: theme.textTheme.caption?.letterSpacing,
+    );
+    final headline5 = Style(
+      color: theme.textTheme.headline5?.color,
+      fontSize: FontSize(
+        theme.textTheme.headline5?.fontSize,
+      ),
+      fontWeight: theme.textTheme.headline5?.fontWeight,
+      letterSpacing: theme.textTheme.headline5?.letterSpacing,
+    );
+    final headline6 = Style(
+      color: theme.textTheme.headline6?.color,
+      fontSize: FontSize(
+        theme.textTheme.headline6?.fontSize,
+      ),
+      fontWeight: theme.textTheme.headline6?.fontWeight,
+      letterSpacing: theme.textTheme.headline6?.letterSpacing,
+    );
+
+    final isDesktopPlatform =
+        Platform.isMacOS || Platform.isLinux || Platform.isWindows;
 
     return Expanded(
       child: Align(
@@ -244,113 +281,85 @@ class _FeedItemContent extends StatelessWidget {
                   //  TODO 更新时间
                   Text(
                     "12:00",
-                    style: theme.textTheme.overline,
+                    style: theme.textTheme.headline5
+                        ?.copyWith(color: Colors.black54),
                   ),
 
                   Text(
                     item.title,
-                    style: theme.textTheme.headline1,
+                    style: theme.textTheme.headline4
+                        ?.copyWith(color: Colors.black87),
                   ),
 
                   item.author.isNotEmpty
                       ? Text(
                           item.author,
-                          style: theme.textTheme.overline,
+                          style: theme.textTheme.headline5
+                              ?.copyWith(color: Colors.black54),
                         )
                       : Container(),
 
                   item.source.isNotEmpty
                       ? Text(
                           item.source,
-                          style: theme.textTheme.overline,
+                          style: theme.textTheme.headline5
+                              ?.copyWith(color: Colors.black54),
                         )
                       : Container(),
-
+                  // TODO 我们有必要编写一套类似  https://github.com/postlight/mercury-parser 的工具了
                   Html(
+                    customRender: isDesktopPlatform
+                        ? {
+                            "iframe": (RenderContext context, Widget child) {
+                              var width = MediaQuery.of(context.buildContext)
+                                  .size
+                                  .width;
+                              var height = width * 9 / 16;
+
+                              return Container(
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFFBFCFF),
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(32),
+                                  ),
+                                ),
+                                constraints: const BoxConstraints(
+                                  maxWidth: 600,
+                                  minWidth: 200,
+                                  maxHeight: 450,
+                                  minHeight: 200,
+                                ),
+                                height: height,
+                                width: width,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Image.asset("assets/images/empty.png"),
+                                    Text(
+                                      "Your OS does not support iframes.",
+                                      style: theme.textTheme.caption,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          }
+                        : {},
                     data: item.content,
                     shrinkWrap: true,
                     style: {
                       //   TODO "a": Style(),
-                      "div": Style(
-                        color: theme.textTheme.bodyText2?.color,
-                        fontSize: FontSize(
-                          theme.textTheme.bodyText2?.fontSize,
-                        ),
-                        fontWeight: theme.textTheme.bodyText2?.fontWeight,
-                        letterSpacing: theme.textTheme.bodyText2?.letterSpacing,
-                      ),
-                      "figcaption": Style(
-                        color: theme.textTheme.caption?.color,
-                        fontSize: FontSize(
-                          theme.textTheme.caption?.fontSize,
-                        ),
-                        fontWeight: theme.textTheme.caption?.fontWeight,
-                        letterSpacing: theme.textTheme.caption?.letterSpacing,
-                      ),
-                      "h1": Style(
-                        color: theme.textTheme.headline1?.color,
-                        fontSize: FontSize(
-                          theme.textTheme.headline1?.fontSize,
-                        ),
-                        fontWeight: theme.textTheme.headline1?.fontWeight,
-                        letterSpacing: theme.textTheme.headline1?.letterSpacing,
-                      ),
-                      "h2": Style(
-                        color: theme.textTheme.headline2?.color,
-                        fontSize: FontSize(
-                          theme.textTheme.headline2?.fontSize,
-                        ),
-                        fontWeight: theme.textTheme.headline2?.fontWeight,
-                        letterSpacing: theme.textTheme.headline2?.letterSpacing,
-                      ),
-                      "h3": Style(
-                        color: theme.textTheme.headline3?.color,
-                        fontSize: FontSize(
-                          theme.textTheme.headline3?.fontSize,
-                        ),
-                        fontWeight: theme.textTheme.headline3?.fontWeight,
-                        letterSpacing: theme.textTheme.headline3?.letterSpacing,
-                      ),
-                      "h4": Style(
-                        color: theme.textTheme.headline4?.color,
-                        fontSize: FontSize(
-                          theme.textTheme.headline4?.fontSize,
-                        ),
-                        fontWeight: theme.textTheme.headline4?.fontWeight,
-                        letterSpacing: theme.textTheme.headline4?.letterSpacing,
-                      ),
-                      "h5": Style(
-                        color: theme.textTheme.headline5?.color,
-                        fontSize: FontSize(
-                          theme.textTheme.headline5?.fontSize,
-                        ),
-                        fontWeight: theme.textTheme.headline5?.fontWeight,
-                        letterSpacing: theme.textTheme.headline5?.letterSpacing,
-                      ),
-                      "h6": Style(
-                        color: theme.textTheme.headline6?.color,
-                        fontSize: FontSize(
-                          theme.textTheme.headline6?.fontSize,
-                        ),
-                        fontWeight: theme.textTheme.headline6?.fontWeight,
-                        letterSpacing: theme.textTheme.headline6?.letterSpacing,
-                      ),
-                      "p": Style(
-                        color: theme.textTheme.bodyText2?.color,
-                        fontSize: FontSize(
-                          theme.textTheme.bodyText2?.fontSize,
-                        ),
-                        fontWeight: theme.textTheme.bodyText2?.fontWeight,
-                        letterSpacing: theme.textTheme.bodyText2?.letterSpacing,
-                      ),
-                      "span": Style(
-                        color: theme.textTheme.bodyText2?.color,
-                        fontSize: FontSize(
-                          theme.textTheme.bodyText2?.fontSize,
-                        ),
-                        fontWeight: theme.textTheme.bodyText2?.fontWeight,
-                        letterSpacing: theme.textTheme.bodyText2?.letterSpacing,
-                      ),
+                      "div": bodyText2,
+                      "figcaption": caption,
+                      "h1": headline5,
+                      "h2": headline6,
+                      "h3": headline6,
+                      "h4": headline6,
+                      "h5": headline6,
+                      "h6": headline6,
+                      "p": bodyText2,
+                      "span": bodyText2,
                     },
                   ),
                 ],
@@ -423,81 +432,9 @@ class ThunderbirdRSSApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        textTheme: const TextTheme(
-          headline1: TextStyle(
-            color: Colors.black,
-            fontSize: 48,
-            fontWeight: FontWeight.w500,
-            letterSpacing: -1.5,
-          ),
-          headline2: TextStyle(
-            fontSize: 40,
-            fontWeight: FontWeight.w300,
-            letterSpacing: -0.5,
-          ),
-          headline3: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w500,
-          ),
-          headline4: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 0.25,
-          ),
-          headline5: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w400,
-          ),
-          headline6: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.15,
-          ),
-          subtitle1: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 0.15,
-          ),
-          subtitle2: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.1,
-          ),
-          bodyText1: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.5,
-            height: 1.5,
-          ),
-          bodyText2: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 0.25,
-            height: 1.5,
-          ),
-          button: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 1.25,
-          ),
-          caption: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 0.4,
-          ),
-          overline: TextStyle(
-            color: Color(0xFF666666),
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 1.5,
-          ),
-        ),
-      ),
-      home: const HomePage(title: 'Flutter Demo Home Page'),
+      home: HomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
