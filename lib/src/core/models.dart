@@ -242,8 +242,9 @@ abstract class _FeedBase with Store {
   collectStatistics() async {
     switch (id) {
       case _idUnreadMessagesFeed:
-        itemCount = await storage.feedItemsDao.itemCount();
-        unreadItemCount = await storage.feedItemsDao.unreadItemCount();
+        final count = await storage.feedItemsDao.unreadItemCount();
+        itemCount = count;
+        unreadItemCount = count;
 
         break;
       case _idStarredMessagesFeed:

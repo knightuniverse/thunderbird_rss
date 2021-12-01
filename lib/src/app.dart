@@ -172,24 +172,33 @@ class _FeedItem extends StatelessWidget {
                             ?.copyWith(color: Colors.black54)
                         : theme.textTheme.overline,
                   ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.star,
-                        size: 10,
-                        color: item.read ? Colors.black54 : Colors.black,
-                      ),
-                      const SizedBox(width: 8),
-                      //  TODO 更新时间
-                      Text(
-                        "12:00",
-                        style: item.read
-                            ? theme.textTheme.overline
-                                ?.copyWith(color: Colors.black54)
-                            : theme.textTheme.overline,
-                      ),
-                    ],
-                  ),
+                  item.starred
+                      ? Row(
+                          children: [
+                            //  TODO 星标
+                            Icon(
+                              Icons.star,
+                              size: 10,
+                              color: item.read ? Colors.black54 : Colors.black,
+                            ),
+                            const SizedBox(width: 8),
+                            //  TODO 更新时间
+                            Text(
+                              "12:00",
+                              style: item.read
+                                  ? theme.textTheme.overline
+                                      ?.copyWith(color: Colors.black54)
+                                  : theme.textTheme.overline,
+                            ),
+                          ],
+                        )
+                      : Text(
+                          "12:00",
+                          style: item.read
+                              ? theme.textTheme.overline
+                                  ?.copyWith(color: Colors.black54)
+                              : theme.textTheme.overline,
+                        ),
                 ],
               ),
               images.isEmpty
@@ -299,11 +308,15 @@ class _FeedItemContent extends StatelessWidget {
                         ?.copyWith(color: Colors.black54),
                   ),
 
+                  const SizedBox(height: 8),
+
                   Text(
                     item.title,
                     style: theme.textTheme.headline4
                         ?.copyWith(color: Colors.black87),
                   ),
+
+                  const SizedBox(height: 8),
 
                   item.author.isNotEmpty
                       ? Text(
@@ -313,6 +326,10 @@ class _FeedItemContent extends StatelessWidget {
                         )
                       : Container(),
 
+                  item.author.isNotEmpty
+                      ? const SizedBox(height: 8)
+                      : Container(),
+
                   item.source.isNotEmpty
                       ? Text(
                           item.source,
@@ -320,6 +337,11 @@ class _FeedItemContent extends StatelessWidget {
                               ?.copyWith(color: Colors.black54),
                         )
                       : Container(),
+
+                  item.source.isNotEmpty
+                      ? const SizedBox(height: 8)
+                      : Container(),
+
                   // TODO 我们有必要编写一套类似  https://github.com/postlight/mercury-parser 的工具了
                   Html(
                     customRender: isDesktopPlatform
@@ -448,18 +470,13 @@ class ThunderbirdRSSApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       title: 'Flutter Demo',
-      home: HomePage(title: 'Flutter Demo Home Page'),
+      home: HomePage(),
     );
   }
 }
 
 class HomePage extends StatelessWidget {
-  final String title;
-
-  const HomePage({
-    Key? key,
-    required this.title,
-  }) : super(key: key);
+  const HomePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -489,14 +506,16 @@ class HomePage extends StatelessWidget {
                       ),
                       ListTile(
                         leading: const Icon(Icons.message),
-                        title: const Text('Unread Messages'),
+                        title: const Text('Unread'),
+                        trailing: Text("${app.unread.itemCount}"),
                         onTap: () {
                           app.checkout(app.unread);
                         },
                       ),
                       ListTile(
                         leading: const Icon(Icons.star),
-                        title: const Text('Starred Messages'),
+                        title: const Text('Starred'),
+                        trailing: Text("${app.unread.unreadItemCount}"),
                         onTap: () {
                           app.checkout(app.starred);
                         },
