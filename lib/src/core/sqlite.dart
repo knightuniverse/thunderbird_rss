@@ -156,36 +156,6 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
       isRead: isRead,
       isStarred: isStarred,
     );
-
-    // final query = select(feedItems)..where((tbl) => tbl.feedId.equals(feedId));
-
-    // if (isRead != null) {
-    //   query.where((tbl) => tbl.read.equals(isRead));
-    // }
-
-    // if (isStarred != null) {
-    //   query.where((tbl) => tbl.starred.equals(isStarred));
-    // }
-
-    // query
-    //   ..limit(limit, offset: offset)
-    //   ..orderBy(
-    //     [
-    //       (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
-    //     ],
-    //   );
-
-    // return query.get();
-
-    // return (select(feedItems)
-    //       ..where((tbl) => tbl.feedId.equals(feedId))
-    //       ..limit(limit, offset: offset)
-    //       ..orderBy(
-    //         [
-    //           (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
-    //         ],
-    //       ))
-    //     .get();
   }
 
   Future<List<FeedItem>> findUnreadItems({
@@ -212,32 +182,6 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
       isRead: isRead,
       isStarred: true,
     );
-
-    // final query = select(feedItems)..where((tbl) => tbl.starred.equals(true));
-
-    // if (isRead != null) {
-    //   query.where((tbl) => tbl.read.equals(isRead));
-    // }
-
-    // query
-    //   ..limit(limit, offset: offset)
-    //   ..orderBy(
-    //     [
-    //       (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
-    //     ],
-    //   );
-
-    // return query.get();
-
-    // return (select(feedItems)
-    //       ..where((tbl) => tbl.starred.equals(true))
-    //       ..limit(limit, offset: offset)
-    //       ..orderBy(
-    //         [
-    //           (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
-    //         ],
-    //       ))
-    //     .get();
   }
 
   Future<void> insert(FeedItemsCompanion entry) async {
@@ -358,28 +302,5 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
       );
 
     return query.get();
-
-    // if (feedId != null && feedId > 0) {
-    //   return (select(feedItems)
-    //         ..limit(limit, offset: offset)
-    //         ..where((tbl) =>
-    //             tbl.feedId.equals(feedId) & tbl.content.like("%$keyword%"))
-    //         ..orderBy(
-    //           [
-    //             (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
-    //           ],
-    //         ))
-    //       .get();
-    // }
-
-    // return (select(feedItems)
-    //       ..limit(limit, offset: offset)
-    //       ..where((tbl) => tbl.content.like("%$keyword%"))
-    //       ..orderBy(
-    //         [
-    //           (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
-    //         ],
-    //       ))
-    //     .get();
   }
 }
