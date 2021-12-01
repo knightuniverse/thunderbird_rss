@@ -18,5 +18,10 @@ void main() async {
   // await subscriptions.add(atom);
   // await subscriptions.add(rss);
   // print(subscriptions.feeds.length);
+
+  // https://www.vgtime.com/rss.jhtml
+  // https://rss.cnbeta.com/rss
+  // https://feeds.appinn.com/appinns/
+
   runApp(const ThunderbirdRSSApp());
 }

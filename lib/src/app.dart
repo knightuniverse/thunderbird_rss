@@ -26,7 +26,7 @@ class _FeedLogo extends StatelessWidget {
             ),
             height: iconTheme.size,
             width: iconTheme.size,
-          ) //ImageIcon(NetworkImage(feed.icon))
+          )
         : const Icon(Icons.rss_feed);
   }
 }
@@ -45,41 +45,41 @@ class _Feed extends StatelessWidget {
         children: [
           AppBar(
             actions: [
-              IconButton(
-                icon: const Icon(Icons.star_border_outlined),
-                tooltip: 'Only show starred items',
-                onPressed: () {
-                  //  TODO
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('This is a snackbar'),
+              Observer(
+                builder: (_) => PopupMenuButton<model.FeedItemFilter>(
+                  icon: const Icon(Icons.more_vert),
+                  itemBuilder: (BuildContext context) => [
+                    PopupMenuItem<model.FeedItemFilter>(
+                      value: model.FeedItemFilter.starred,
+                      child: ListTile(
+                        enabled: !feed.isStarredItemsAggregation,
+                        leading: const Icon(Icons.star_border_outlined),
+                        selected: feed.filter == model.FeedItemFilter.starred,
+                        title: const Text('Only starred items'),
+                      ),
                     ),
-                  );
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.circle_outlined),
-                tooltip: 'Only show starred items',
-                onPressed: () {
-                  //  TODO
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('This is a snackbar'),
+                    PopupMenuItem<model.FeedItemFilter>(
+                      value: model.FeedItemFilter.unread,
+                      child: ListTile(
+                        enabled: !feed.isUnreadItemsAggregation,
+                        leading: const Icon(Icons.circle_outlined),
+                        selected: feed.filter == model.FeedItemFilter.unread,
+                        title: const Text('Only unread items'),
+                      ),
                     ),
-                  );
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.message_outlined),
-                tooltip: 'Show all items',
-                onPressed: () {
-                  //  TODO
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('This is a snackbar'),
+                    PopupMenuItem<model.FeedItemFilter>(
+                      value: model.FeedItemFilter.all,
+                      child: ListTile(
+                        leading: const Icon(Icons.message_outlined),
+                        selected: feed.filter == model.FeedItemFilter.all,
+                        title: const Text('All items'),
+                      ),
                     ),
-                  );
-                },
+                  ],
+                  onSelected: (model.FeedItemFilter result) {
+                    feed.setItemFilter(result);
+                  },
+                ),
               ),
             ],
             elevation: 0,
@@ -167,19 +167,26 @@ class _FeedItem extends StatelessWidget {
                 children: [
                   Text(
                     feed.title,
-                    style: theme.textTheme.overline,
+                    style: item.read
+                        ? theme.textTheme.overline
+                            ?.copyWith(color: Colors.black54)
+                        : theme.textTheme.overline,
                   ),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.star,
                         size: 10,
+                        color: item.read ? Colors.black54 : Colors.black,
                       ),
                       const SizedBox(width: 8),
                       //  TODO 更新时间
                       Text(
                         "12:00",
-                        style: theme.textTheme.overline,
+                        style: item.read
+                            ? theme.textTheme.overline
+                                ?.copyWith(color: Colors.black54)
+                            : theme.textTheme.overline,
                       ),
                     ],
                   ),
@@ -188,7 +195,11 @@ class _FeedItem extends StatelessWidget {
               images.isEmpty
                   ? Text(
                       item.title,
-                      style: theme.textTheme.subtitle2,
+                      style: item.read
+                          ? theme.textTheme.subtitle2
+                              ?.copyWith(color: Colors.black54)
+                          : theme.textTheme.subtitle2,
+                      softWrap: true,
                     )
                   : Row(
                       children: [
@@ -196,7 +207,10 @@ class _FeedItem extends StatelessWidget {
                           child: Text(
                             item.title,
                             softWrap: true,
-                            style: theme.textTheme.subtitle2,
+                            style: item.read
+                                ? theme.textTheme.subtitle2
+                                    ?.copyWith(color: Colors.black54)
+                                : theme.textTheme.subtitle2,
                           ),
                         ),
                         const SizedBox(
@@ -473,13 +487,19 @@ class HomePage extends StatelessWidget {
                               .copyWith(color: Colors.white),
                         ),
                       ),
-                      const ListTile(
-                        leading: Icon(Icons.message),
-                        title: Text('Messages'),
+                      ListTile(
+                        leading: const Icon(Icons.message),
+                        title: const Text('Unread Messages'),
+                        onTap: () {
+                          app.checkout(app.unread);
+                        },
                       ),
-                      const ListTile(
-                        leading: Icon(Icons.star),
-                        title: Text('Starred'),
+                      ListTile(
+                        leading: const Icon(Icons.star),
+                        title: const Text('Starred Messages'),
+                        onTap: () {
+                          app.checkout(app.starred);
+                        },
                       ),
                       const Divider(
                         thickness: 1,

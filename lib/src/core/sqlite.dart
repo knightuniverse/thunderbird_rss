@@ -76,7 +76,14 @@ class FeedsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
   Future<List<Feed>> get all => select(feeds).get();
 
   Future<Feed?> find(int id) {
-    return (select(feeds)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+    return (select(feeds)
+          ..where((tbl) => tbl.id.equals(id))
+          ..orderBy(
+            [
+              (u) => OrderingTerm(expression: u.id, mode: OrderingMode.asc),
+            ],
+          ))
+        .getSingleOrNull();
   }
 
   Future<int> insert(FeedsCompanion entry) {
@@ -89,15 +96,148 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
     with _$FeedItemsDaoMixin {
   FeedItemsDao(ThunderBirdRSSDataBase db) : super(db);
 
+  Future<List<FeedItem>> _findItems({
+    int limit = 20,
+    int offset = 0,
+    int? feedId,
+    bool? isRead,
+    bool? isStarred,
+  }) {
+    final query = select(feedItems);
+
+    if (feedId != null && feedId > 0) {
+      query.where((tbl) => tbl.feedId.equals(feedId));
+    }
+
+    if (isRead != null) {
+      query.where((tbl) => tbl.read.equals(isRead));
+    }
+
+    if (isStarred != null) {
+      query.where((tbl) => tbl.starred.equals(isStarred));
+    }
+
+    query
+      ..limit(limit, offset: offset)
+      ..orderBy(
+        [
+          (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
+        ],
+      );
+
+    return query.get();
+  }
+
+  Future<List<FeedItem>> findItems({
+    int limit = 20,
+    int offset = 0,
+    bool? isRead,
+    bool? isStarred,
+  }) {
+    return _findItems(
+      limit: limit,
+      offset: offset,
+      isRead: isRead,
+      isStarred: isStarred,
+    );
+  }
+
   Future<List<FeedItem>> findItemsOfFeed(
     int feedId, {
     int limit = 20,
     int offset = 0,
+    bool? isRead,
+    bool? isStarred,
   }) {
-    return (select(feedItems)
-          ..where((tbl) => tbl.feedId.equals(feedId))
-          ..limit(limit, offset: offset))
-        .get();
+    return _findItems(
+      limit: limit,
+      offset: offset,
+      feedId: feedId,
+      isRead: isRead,
+      isStarred: isStarred,
+    );
+
+    // final query = select(feedItems)..where((tbl) => tbl.feedId.equals(feedId));
+
+    // if (isRead != null) {
+    //   query.where((tbl) => tbl.read.equals(isRead));
+    // }
+
+    // if (isStarred != null) {
+    //   query.where((tbl) => tbl.starred.equals(isStarred));
+    // }
+
+    // query
+    //   ..limit(limit, offset: offset)
+    //   ..orderBy(
+    //     [
+    //       (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
+    //     ],
+    //   );
+
+    // return query.get();
+
+    // return (select(feedItems)
+    //       ..where((tbl) => tbl.feedId.equals(feedId))
+    //       ..limit(limit, offset: offset)
+    //       ..orderBy(
+    //         [
+    //           (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
+    //         ],
+    //       ))
+    //     .get();
+  }
+
+  Future<List<FeedItem>> findUnreadItems({
+    int limit = 20,
+    int offset = 0,
+    bool? isStarred,
+  }) {
+    return _findItems(
+      limit: limit,
+      offset: offset,
+      isRead: false,
+      isStarred: isStarred,
+    );
+  }
+
+  Future<List<FeedItem>> findStarredItems({
+    int limit = 20,
+    int offset = 0,
+    bool? isRead,
+  }) {
+    return _findItems(
+      limit: limit,
+      offset: offset,
+      isRead: isRead,
+      isStarred: true,
+    );
+
+    // final query = select(feedItems)..where((tbl) => tbl.starred.equals(true));
+
+    // if (isRead != null) {
+    //   query.where((tbl) => tbl.read.equals(isRead));
+    // }
+
+    // query
+    //   ..limit(limit, offset: offset)
+    //   ..orderBy(
+    //     [
+    //       (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
+    //     ],
+    //   );
+
+    // return query.get();
+
+    // return (select(feedItems)
+    //       ..where((tbl) => tbl.starred.equals(true))
+    //       ..limit(limit, offset: offset)
+    //       ..orderBy(
+    //         [
+    //           (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
+    //         ],
+    //       ))
+    //     .get();
   }
 
   Future<void> insert(FeedItemsCompanion entry) async {
@@ -142,17 +282,104 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
     );
   }
 
-  Future<int> itemCount(int feedId) async {
+  Future<int> itemCount() async {
+    return customSelect(
+      "SELECT COUNT(*) AS c FROM feed_items",
+      readsFrom: {feedItems},
+    ).map((p0) => p0.read<int>('c')).getSingle();
+  }
+
+  Future<int> unreadItemCount() async {
+    return customSelect(
+      "SELECT COUNT(*) AS c FROM feed_items WHERE read = 0",
+      readsFrom: {feedItems},
+    ).map((p0) => p0.read<int>('c')).getSingle();
+  }
+
+  Future<int> itemCountOfFeed(int feedId) async {
     return customSelect(
       "SELECT COUNT(*) AS c FROM feed_items WHERE feed_id = $feedId",
       readsFrom: {feedItems},
     ).map((p0) => p0.read<int>('c')).getSingle();
   }
 
-  Future<int> unreadItemCount(int feedId) async {
+  Future<int> unreadItemCountOfFeed(int feedId) async {
     return customSelect(
       "SELECT COUNT(*) AS c FROM feed_items WHERE feed_id = $feedId AND read = 0",
       readsFrom: {feedItems},
     ).map((p0) => p0.read<int>('c')).getSingle();
+  }
+
+  Future<int> starredItemCount() async {
+    return customSelect(
+      "SELECT COUNT(*) AS c FROM feed_items WHERE starred = 1",
+      readsFrom: {feedItems},
+    ).map((p0) => p0.read<int>('c')).getSingle();
+  }
+
+  Future<int> unreadStarredItemCount() async {
+    return customSelect(
+      "SELECT COUNT(*) AS c FROM feed_items WHERE starred = 1 AND read = 0",
+      readsFrom: {feedItems},
+    ).map((p0) => p0.read<int>('c')).getSingle();
+  }
+
+  Future<List<FeedItem>> search(
+    String keyword, {
+    int limit = 20,
+    int offset = 0,
+    int? feedId,
+    bool? isRead,
+    bool? isStarred,
+  }) {
+    final query = select(feedItems);
+
+    if (feedId != null && feedId > 0) {
+      query.where(
+          (tbl) => tbl.feedId.equals(feedId) & tbl.content.like("%$keyword%"));
+    } else {
+      query.where((tbl) => tbl.content.like("%$keyword%"));
+    }
+
+    if (isRead != null) {
+      query.where((tbl) => tbl.read.equals(isRead));
+    }
+
+    if (isStarred != null) {
+      query.where((tbl) => tbl.starred.equals(isStarred));
+    }
+
+    query
+      ..limit(limit, offset: offset)
+      ..orderBy(
+        [
+          (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
+        ],
+      );
+
+    return query.get();
+
+    // if (feedId != null && feedId > 0) {
+    //   return (select(feedItems)
+    //         ..limit(limit, offset: offset)
+    //         ..where((tbl) =>
+    //             tbl.feedId.equals(feedId) & tbl.content.like("%$keyword%"))
+    //         ..orderBy(
+    //           [
+    //             (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
+    //           ],
+    //         ))
+    //       .get();
+    // }
+
+    // return (select(feedItems)
+    //       ..limit(limit, offset: offset)
+    //       ..where((tbl) => tbl.content.like("%$keyword%"))
+    //       ..orderBy(
+    //         [
+    //           (u) => OrderingTerm(expression: u.id, mode: OrderingMode.desc),
+    //         ],
+    //       ))
+    //     .get();
   }
 }
