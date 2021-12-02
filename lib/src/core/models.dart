@@ -126,6 +126,9 @@ abstract class _FeedBase with Store {
   int unreadItemCount = 0;
 
   @observable
+  String keyword = "";
+
+  @observable
   ObservableList<FeedItem> items = ObservableList<FeedItem>.of([]);
 
   final int _limit = 200;
@@ -144,6 +147,7 @@ abstract class _FeedBase with Store {
     this.description = "",
     this.link = "",
     this.icon = "",
+    this.filter = FeedItemFilter.unread,
   });
 
   @action
@@ -234,7 +238,9 @@ abstract class _FeedBase with Store {
   }
 
   @action
-  clear() {
+  void reset() {
+    _offset = 0;
+    keyword = "";
     items.clear();
   }
 
@@ -266,43 +272,85 @@ abstract class _FeedBase with Store {
   }
 
   @action
-  load() async {
+  _load() async {
     switch (id) {
       case _idUnreadMessagesFeed:
-        items.addAll((await storage.feedItemsDao.findUnreadItems(
-          limit: _limit,
-          offset: _offset,
-          isStarred: filter == FeedItemFilter.starred ? true : null,
-        ))
-            .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
+        if (keyword.isEmpty) {
+          items.addAll((await storage.feedItemsDao.findUnreadItems(
+            limit: _limit,
+            offset: _offset,
+            isStarred: filter == FeedItemFilter.starred ? true : null,
+          ))
+              .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
+        } else {
+          items.addAll((await storage.feedItemsDao.search(
+            keyword,
+            limit: _limit,
+            offset: _offset,
+            isRead: false,
+            isStarred: filter == FeedItemFilter.starred ? true : null,
+          ))
+              .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
+        }
 
         break;
       case _idStarredMessagesFeed:
-        items.addAll((await storage.feedItemsDao.findStarredItems(
-          limit: _limit,
-          offset: _offset,
-          isRead: filter == FeedItemFilter.all
-              ? null
-              : !(filter == FeedItemFilter.unread),
-        ))
-            .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
+        if (keyword.isEmpty) {
+          items.addAll((await storage.feedItemsDao.findStarredItems(
+            limit: _limit,
+            offset: _offset,
+            isRead: filter == FeedItemFilter.all
+                ? null
+                : !(filter == FeedItemFilter.unread),
+          ))
+              .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
+        } else {
+          items.addAll((await storage.feedItemsDao.search(
+            keyword,
+            limit: _limit,
+            offset: _offset,
+            isRead: filter == FeedItemFilter.all
+                ? null
+                : !(filter == FeedItemFilter.unread),
+            isStarred: true,
+          ))
+              .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
+        }
 
         break;
       default:
-        items.addAll((await storage.feedItemsDao.findItemsOfFeed(
-          id,
-          limit: _limit,
-          offset: _offset,
-          isRead: filter == FeedItemFilter.all
-              ? null
-              : !(filter == FeedItemFilter.unread),
-          isStarred: filter == FeedItemFilter.starred ? true : null,
-        ))
-            .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
+        if (keyword.isEmpty) {
+          items.addAll((await storage.feedItemsDao.findItemsOfFeed(
+            id,
+            limit: _limit,
+            offset: _offset,
+            isRead: filter == FeedItemFilter.all
+                ? null
+                : !(filter == FeedItemFilter.unread),
+            isStarred: filter == FeedItemFilter.starred ? true : null,
+          ))
+              .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
+        } else {
+          items.addAll((await storage.feedItemsDao.search(
+            keyword,
+            limit: _limit,
+            offset: _offset,
+            feedId: id,
+            isRead: filter == FeedItemFilter.all
+                ? null
+                : !(filter == FeedItemFilter.unread),
+            isStarred: filter == FeedItemFilter.starred ? true : null,
+          ))
+              .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
+        }
 
         break;
     }
+  }
 
+  @action
+  load() async {
+    await _load();
     _offset += _limit;
   }
 
@@ -327,48 +375,17 @@ abstract class _FeedBase with Store {
         break;
     }
 
-    _offset = 0;
-    items.clear();
-
-    switch (id) {
-      case _idUnreadMessagesFeed:
-        items.addAll((await storage.feedItemsDao.findUnreadItems(
-          limit: _limit,
-          offset: _offset,
-          isStarred: filter == FeedItemFilter.starred ? true : null,
-        ))
-            .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
-
-        break;
-      case _idStarredMessagesFeed:
-        items.addAll((await storage.feedItemsDao.findStarredItems(
-          limit: _limit,
-          offset: _offset,
-          isRead: filter == FeedItemFilter.all
-              ? null
-              : !(filter == FeedItemFilter.unread),
-        ))
-            .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
-
-        break;
-      default:
-        items.addAll((await storage.feedItemsDao.findItemsOfFeed(
-          id,
-          limit: _limit,
-          offset: _offset,
-          isRead: filter == FeedItemFilter.all
-              ? null
-              : !(filter == FeedItemFilter.unread),
-          isStarred: filter == FeedItemFilter.starred ? true : null,
-        ))
-            .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
-
-        break;
-    }
+    reset();
+    await _load();
   }
 
-  // @action
-  // Future<void> search(String keyword) async {}
+  @action
+  Future<void> search(String next) async {
+    keyword = next;
+    _offset = 0;
+    items.clear();
+    await _load();
+  }
 }
 
 class App = _AppBase with _$App;
@@ -398,6 +415,7 @@ abstract class _AppBase with Store {
           url: "Unread Messages",
           title: "Unread Messages",
           description: "Unread Messages",
+          filter: FeedItemFilter.all,
         ),
         starred = Feed(
           storage,
@@ -405,6 +423,7 @@ abstract class _AppBase with Store {
           url: "Starred Messages",
           title: "Starred Messages",
           description: "Starred Messages",
+          filter: FeedItemFilter.all,
         ) {
     selectedFeed = unread;
   }
@@ -586,14 +605,23 @@ abstract class _AppBase with Store {
   }
 
   @action
-  void checkout(Feed feed) {
-    selectedFeed = feed;
-    feed.load();
+  Future<void> checkout(Feed feed) {
+    if (selectedFeed != feed) {
+      selectedFeed?.reset();
+      selectedFeed = feed;
+      return feed.load();
+    }
+
+    return Future.value();
   }
 
   @action
-  void read(FeedItem item) {
-    selectedFeedItem = item;
-    item.setRead();
+  Future<void> read(FeedItem item) {
+    if (selectedFeedItem != item) {
+      selectedFeedItem = item;
+      return item.setRead();
+    }
+
+    return Future.value();
   }
 }

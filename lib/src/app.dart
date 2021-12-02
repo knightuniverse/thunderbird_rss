@@ -31,96 +31,109 @@ class _FeedLogo extends StatelessWidget {
   }
 }
 
-class _Feed extends StatelessWidget {
+class _Feed extends StatefulWidget {
   final model.Feed feed;
 
   const _Feed(this.feed, {Key? key}) : super(key: key);
 
   @override
+  State<StatefulWidget> createState() {
+    return _FeedState();
+  }
+}
+
+class _FeedState extends State<_Feed> {
+  final GlobalKey _formKey = GlobalKey<FormState>();
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      initialIndex: 1,
-      length: 3,
-      child: Column(
-        children: [
-          AppBar(
-            actions: [
-              Observer(
-                builder: (_) => PopupMenuButton<model.FeedItemFilter>(
-                  icon: const Icon(Icons.more_vert),
-                  itemBuilder: (BuildContext context) => [
-                    PopupMenuItem<model.FeedItemFilter>(
-                      value: model.FeedItemFilter.starred,
-                      child: ListTile(
-                        enabled: !feed.isStarredItemsAggregation,
-                        leading: const Icon(Icons.star_border_outlined),
-                        selected: feed.filter == model.FeedItemFilter.starred,
-                        title: const Text('Only starred items'),
-                      ),
+    final feed = widget.feed;
+
+    return Column(
+      children: [
+        AppBar(
+          actions: [
+            Observer(
+              builder: (_) => PopupMenuButton<model.FeedItemFilter>(
+                icon: const Icon(Icons.more_vert),
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem<model.FeedItemFilter>(
+                    value: model.FeedItemFilter.starred,
+                    child: ListTile(
+                      enabled: !feed.isStarredItemsAggregation,
+                      leading: const Icon(Icons.star_border_outlined),
+                      selected: feed.filter == model.FeedItemFilter.starred,
+                      title: const Text('Only starred items'),
                     ),
-                    PopupMenuItem<model.FeedItemFilter>(
-                      value: model.FeedItemFilter.unread,
-                      child: ListTile(
-                        enabled: !feed.isUnreadItemsAggregation,
-                        leading: const Icon(Icons.circle_outlined),
-                        selected: feed.filter == model.FeedItemFilter.unread,
-                        title: const Text('Only unread items'),
-                      ),
+                  ),
+                  PopupMenuItem<model.FeedItemFilter>(
+                    value: model.FeedItemFilter.unread,
+                    child: ListTile(
+                      enabled: !feed.isUnreadItemsAggregation,
+                      leading: const Icon(Icons.circle_outlined),
+                      selected: feed.filter == model.FeedItemFilter.unread,
+                      title: const Text('Only unread items'),
                     ),
-                    PopupMenuItem<model.FeedItemFilter>(
-                      value: model.FeedItemFilter.all,
-                      child: ListTile(
-                        leading: const Icon(Icons.message_outlined),
-                        selected: feed.filter == model.FeedItemFilter.all,
-                        title: const Text('All items'),
-                      ),
-                    ),
-                  ],
-                  onSelected: (model.FeedItemFilter result) {
-                    feed.setItemFilter(result);
-                  },
-                ),
-              ),
-            ],
-            elevation: 0,
-            title: Text(
-              feed.title,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              child: Column(
-                children: [
-                  TextFormField(
-                    autofocus: false,
-                    decoration: const InputDecoration(
-                      hintText: "Keyword",
-                      suffixIcon: Icon(Icons.search),
+                  ),
+                  PopupMenuItem<model.FeedItemFilter>(
+                    value: model.FeedItemFilter.all,
+                    child: ListTile(
+                      leading: const Icon(Icons.message_outlined),
+                      selected: feed.filter == model.FeedItemFilter.all,
+                      title: const Text('All items'),
                     ),
                   ),
                 ],
-              ),
-            ),
-          ),
-          Expanded(
-            child: Observer(
-              builder: (_) => ListView.builder(
-                itemCount: feed.items.length,
-                itemBuilder: (BuildContext context, int i) {
-                  final item = feed.items[i];
-                  return _FeedItem(
-                    feed: feed,
-                    item: item,
-                  );
+                onSelected: (model.FeedItemFilter result) {
+                  feed.setItemFilter(result);
                 },
               ),
             ),
+          ],
+          elevation: 0,
+          title: Text(
+            feed.title,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
           ),
-        ],
-      ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  autofocus: false,
+                  decoration: const InputDecoration(
+                    hintText: "Keyword",
+                    suffixIcon: Icon(Icons.search),
+                  ),
+                  initialValue: "",
+                  textInputAction: TextInputAction.search,
+                  onFieldSubmitted: (value) {
+                    feed.search(value);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: Observer(
+            builder: (_) => ListView.builder(
+              itemCount: feed.items.length,
+              itemBuilder: (BuildContext context, int i) {
+                final item = feed.items[i];
+                return _FeedItem(
+                  feed: feed,
+                  item: item,
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -161,6 +174,8 @@ class _FeedItem extends StatelessWidget {
         return ListTile(
           leading: _FeedLogo(feed),
           title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -287,122 +302,172 @@ class _FeedItemContent extends StatelessWidget {
         Platform.isMacOS || Platform.isLinux || Platform.isWindows;
 
     return Expanded(
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 52, right: 48, left: 48),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 800,
-              ),
-              //  TODO Windows MacOS Linux平台上，不支持iframe渲染，需要设置一个placeholder
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  //  TODO 更新时间
-                  Text(
-                    "12:00",
-                    style: theme.textTheme.headline5
-                        ?.copyWith(color: Colors.black54),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  Text(
-                    item.title,
-                    style: theme.textTheme.headline4
-                        ?.copyWith(color: Colors.black87),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  item.author.isNotEmpty
-                      ? Text(
-                          item.author,
-                          style: theme.textTheme.headline5
-                              ?.copyWith(color: Colors.black54),
-                        )
-                      : Container(),
-
-                  item.author.isNotEmpty
-                      ? const SizedBox(height: 8)
-                      : Container(),
-
-                  item.source.isNotEmpty
-                      ? Text(
-                          item.source,
-                          style: theme.textTheme.headline5
-                              ?.copyWith(color: Colors.black54),
-                        )
-                      : Container(),
-
-                  item.source.isNotEmpty
-                      ? const SizedBox(height: 8)
-                      : Container(),
-
-                  // TODO 我们有必要编写一套类似  https://github.com/postlight/mercury-parser 的工具了
-                  Html(
-                    customRender: isDesktopPlatform
-                        ? {
-                            "iframe": (RenderContext context, Widget child) {
-                              var width = MediaQuery.of(context.buildContext)
-                                  .size
-                                  .width;
-                              var height = width * 9 / 16;
-
-                              return Container(
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFFBFCFF),
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(32),
-                                  ),
-                                ),
-                                constraints: const BoxConstraints(
-                                  maxWidth: 600,
-                                  minWidth: 200,
-                                  maxHeight: 450,
-                                  minHeight: 200,
-                                ),
-                                height: height,
-                                width: width,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Image.asset("assets/images/empty.png"),
-                                    Text(
-                                      "Your OS does not support iframes.",
-                                      style: theme.textTheme.caption,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          }
-                        : {},
-                    data: item.content,
-                    shrinkWrap: true,
-                    style: {
-                      //   TODO "a": Style(),
-                      "div": bodyText2,
-                      "figcaption": caption,
-                      "h1": headline5,
-                      "h2": headline6,
-                      "h3": headline6,
-                      "h4": headline6,
-                      "h5": headline6,
-                      "h6": headline6,
-                      "p": bodyText2,
-                      "span": bodyText2,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AppBar(
+            elevation: 0,
+            title: const Text(""),
+            actions: [
+              Observer(
+                builder: (_) {
+                  return IconButton(
+                    icon: Icon(
+                      item.read ? Icons.circle_outlined : Icons.circle,
+                    ),
+                    onPressed: () {
+                      if (item.read) {
+                        item.setUnread();
+                      } else {
+                        item.setRead();
+                      }
                     },
+                  );
+                },
+              ),
+              Observer(
+                builder: (_) {
+                  return IconButton(
+                    icon: Icon(
+                      item.starred ? Icons.star : Icons.star_border_outlined,
+                    ),
+                    onPressed: () {
+                      if (item.starred) {
+                        item.setUnstarred();
+                      } else {
+                        item.setStarred();
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+          Expanded(
+            // child: Align(
+            //   alignment: Alignment.topCenter,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 52, right: 48, left: 48),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 800,
                   ),
-                ],
+                  //  TODO Windows MacOS Linux平台上，不支持iframe渲染，需要设置一个placeholder
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      //  TODO 更新时间
+                      Text(
+                        "12:00",
+                        style: theme.textTheme.headline5
+                            ?.copyWith(color: Colors.black54),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      Text(
+                        item.title,
+                        style: theme.textTheme.headline4
+                            ?.copyWith(color: Colors.black87),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      item.author.isNotEmpty
+                          ? Text(
+                              item.author,
+                              style: theme.textTheme.headline5
+                                  ?.copyWith(color: Colors.black54),
+                            )
+                          : Container(),
+
+                      item.author.isNotEmpty
+                          ? const SizedBox(height: 8)
+                          : Container(),
+
+                      item.source.isNotEmpty
+                          ? Text(
+                              item.source,
+                              style: theme.textTheme.headline5
+                                  ?.copyWith(color: Colors.black54),
+                            )
+                          : Container(),
+
+                      item.source.isNotEmpty
+                          ? const SizedBox(height: 8)
+                          : Container(),
+
+                      // TODO 我们有必要编写一套类似  https://github.com/postlight/mercury-parser 的工具了
+                      Html(
+                        customRender: isDesktopPlatform
+                            ? {
+                                "iframe":
+                                    (RenderContext context, Widget child) {
+                                  var width =
+                                      MediaQuery.of(context.buildContext)
+                                          .size
+                                          .width;
+                                  var height = width * 9 / 16;
+
+                                  return Container(
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFFBFCFF),
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(32),
+                                      ),
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 600,
+                                      minWidth: 200,
+                                      maxHeight: 450,
+                                      minHeight: 200,
+                                    ),
+                                    height: height,
+                                    width: width,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Image.asset("assets/images/empty.png"),
+                                        Text(
+                                          "Your OS does not support iframes.",
+                                          style: theme.textTheme.caption,
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              }
+                            : {},
+                        data: item.content,
+                        shrinkWrap: true,
+                        style: {
+                          //   TODO "a": Style(),
+                          "div": bodyText2,
+                          "figcaption": caption,
+                          "h1": headline5,
+                          "h2": headline6,
+                          "h3": headline6,
+                          "h4": headline6,
+                          "h5": headline6,
+                          "h6": headline6,
+                          "p": bodyText2,
+                          "span": bodyText2,
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
+            // ),
           ),
-        ),
+        ],
       ),
     );
   }
