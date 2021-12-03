@@ -481,6 +481,7 @@ class _SubscribeDialog extends StatefulWidget {
 }
 
 class _SubscribeDialogState extends State<_SubscribeDialog> {
+  final GlobalKey _formKey = GlobalKey<FormState>();
   final TextEditingController _urlController = TextEditingController();
 
   bool _busy = false;
@@ -490,38 +491,74 @@ class _SubscribeDialogState extends State<_SubscribeDialog> {
     final app = GetIt.I.get<model.App>();
 
     return Dialog(
-      child: Column(
-        children: [
-          TextField(
-            autofocus: true,
-            controller: _urlController,
-            decoration: const InputDecoration(
-              labelText: "RSS",
-              hintText: "RSS",
-              prefixIcon: Icon(Icons.person),
+      child: Container(
+        constraints: BoxConstraints.expand(
+          height: 400,
+          width: 400,
+        ),
+        child: Column(
+          children: [
+            AppBar(
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.close),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+              automaticallyImplyLeading: false,
+              elevation: 0,
+              leading: null,
+              title: Text("Subscribe"),
             ),
-          ),
-          ElevatedButton(
-            child: const Text("移动焦点"),
-            onPressed: () async {
-              if (_busy) {
-                return;
-              }
+            Form(
+              key: _formKey,
+              child: Padding(
+                padding: EdgeInsets.only(right: 16, left: 16),
+                child: Column(
+                  children: [
+                    TextFormField(
+                      autofocus: true,
+                      controller: _urlController,
+                      decoration: const InputDecoration(
+                        labelText: "RSS",
+                        hintText: "RSS",
+                        prefixIcon: Icon(Icons.person),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _busy
+                        ? ElevatedButton(
+                            child: CircularProgressIndicator(),
+                            onPressed: () {},
+                          )
+                        : ElevatedButton(
+                            child: const Text("Subscribe"),
+                            onPressed: () async {
+                              if (_busy) {
+                                return;
+                              }
 
-              setState(() {
-                _busy = true;
-              });
+                              setState(() {
+                                _busy = true;
+                              });
 
-              await app.subscribe(_urlController.text);
+                              await app.subscribe(_urlController.text);
 
-              setState(() {
-                _busy = false;
-              });
+                              setState(() {
+                                _busy = false;
+                              });
 
-              Navigator.pop(context);
-            },
-          ),
-        ],
+                              Navigator.pop(context);
+                            },
+                          ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -551,69 +588,101 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       body: Row(
         children: [
-          Container(
-            child: Observer(
-              builder: (ctx) {
-                return Drawer(
-                  child: ListView(
-                    children: [
-                      DrawerHeader(
-                        decoration: BoxDecoration(
-                          color: Theme.of(ctx).primaryColor,
-                        ),
-                        child: Text(
-                          'ThunderBird RSS',
-                          style: Theme.of(ctx)
-                              .textTheme
-                              .headline5!
-                              .copyWith(color: Colors.white),
-                        ),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.message),
-                        title: const Text('Unread'),
-                        trailing: Text("${app.unread.itemCount}"),
-                        onTap: () {
-                          app.checkout(app.unread);
-                        },
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.star),
-                        title: const Text('Starred'),
-                        trailing: Text("${app.unread.unreadItemCount}"),
-                        onTap: () {
-                          app.checkout(app.starred);
-                        },
-                      ),
-                      const Divider(
-                        thickness: 1,
-                        height: 1,
-                      ),
-                      ...feeds
-                          .map(
-                            (feed) => ListTile(
-                              leading: _FeedLogo(feed),
-                              title: SizedBox(
-                                width: 80,
-                                child: Text(
-                                  feed.title,
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: false,
-                                ),
-                              ),
-                              trailing: Text("${feed.unreadItemCount}"),
-                              onTap: () {
-                                app.checkout(feed);
-                              },
+          Column(
+            children: [
+              Expanded(
+                child: Observer(
+                  builder: (ctx) {
+                    return Drawer(
+                      elevation: 0,
+                      child: ListView(
+                        children: [
+                          DrawerHeader(
+                            decoration: BoxDecoration(
+                              color: Theme.of(ctx).primaryColor,
                             ),
-                          )
-                          .toList()
-                    ],
-                  ),
-                );
-              },
-            ),
-            width: 250,
+                            child: Text(
+                              'ThunderBird RSS',
+                              style: Theme.of(ctx)
+                                  .textTheme
+                                  .headline5!
+                                  .copyWith(color: Colors.white),
+                            ),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.message),
+                            title: const Text('Unread'),
+                            trailing: Text("${app.unread.itemCount}"),
+                            onTap: () {
+                              app.checkout(app.unread);
+                            },
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.star),
+                            title: const Text('Starred'),
+                            trailing: Text("${app.unread.unreadItemCount}"),
+                            onTap: () {
+                              app.checkout(app.starred);
+                            },
+                          ),
+                          const Divider(
+                            thickness: 1,
+                            height: 1,
+                          ),
+                          ...feeds
+                              .map(
+                                (feed) => ListTile(
+                                  leading: _FeedLogo(feed),
+                                  title: SizedBox(
+                                    width: 80,
+                                    child: Text(
+                                      feed.title,
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
+                                    ),
+                                  ),
+                                  trailing: Text("${feed.unreadItemCount}"),
+                                  onTap: () {
+                                    app.checkout(feed);
+                                  },
+                                ),
+                              )
+                              .toList()
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Container(
+                constraints:
+                    const BoxConstraints.expand(height: 56, width: 304),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: () {
+                        app.udpateAllFeeds();
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () {
+                        showDialog(
+                          barrierDismissible: false,
+                          context: context,
+                          builder: (ctx) {
+                            return _SubscribeDialog();
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           Observer(
             builder: (_) {
@@ -640,18 +709,6 @@ class HomePage extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (ctx) {
-              return _SubscribeDialog();
-            },
-          );
-        },
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }

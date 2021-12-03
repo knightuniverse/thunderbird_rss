@@ -22,6 +22,7 @@ void main() async {
   // https://www.vgtime.com/rss.jhtml
   // https://rss.cnbeta.com/rss
   // https://feeds.appinn.com/appinns/
+  // https://www.ifanr.com/feed
 
   runApp(const ThunderbirdRSSApp());
 }

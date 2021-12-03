@@ -154,31 +154,32 @@ abstract class _FeedBase with Store {
   Future<void> _parseAtom(String xml) async {
     final channel = AtomFeed.parse(xml);
     final feedId = id;
+    final inserts = channel.items.map(
+      (e) {
+        var content = e.content;
+        var pubDate = e.published;
+        var authors = e.authors;
+        var source = e.source;
 
-    await storage.feedItemsDao.insertAll(
-      channel.items.map(
-        (e) {
-          var content = e.content;
-          var pubDate = e.published;
-          var authors = e.authors;
-          var source = e.source;
+        return sqlite.FeedItemsCompanion.insert(
+          feedId: feedId,
+          title: e.title ?? "",
+          author:
+              authors.isNotEmpty ? authors.map((e) => e.name).join(",") : "",
+          source: source != null ? source.title ?? "" : "",
+          description: "",
+          content: content ?? "",
+          link: e.links.isNotEmpty ? e.links.first.href ?? "" : "",
+          guid: e.id ?? "",
+          publishedAt:
+              pubDate != null ? DateTime.parse(pubDate) : DateTime.now(),
+        );
+      },
+    ).toList();
 
-          return sqlite.FeedItemsCompanion.insert(
-            feedId: feedId,
-            title: e.title ?? "",
-            author:
-                authors.isNotEmpty ? authors.map((e) => e.name).join(",") : "",
-            source: source != null ? source.title ?? "" : "",
-            description: "",
-            content: content ?? "",
-            link: e.links.isNotEmpty ? e.links.first.href ?? "" : "",
-            guid: e.id ?? "",
-            publishedAt:
-                pubDate != null ? DateTime.parse(pubDate) : DateTime.now(),
-          );
-        },
-      ).toList(),
-    );
+    unreadItemCount += inserts.length;
+
+    await storage.feedItemsDao.insertAll(inserts);
 
     await load();
   }
@@ -187,37 +188,38 @@ abstract class _FeedBase with Store {
   Future<void> _parseRSS(String xml) async {
     final channel = RssFeed.parse(xml);
     final feedId = id;
+    final inserts = channel.items.map(
+      (e) {
+        var author = e.author;
+        var content = e.content;
+        var source = e.source;
+        var description = e.description;
+        var pubDate = e.pubDate;
 
-    await storage.feedItemsDao.insertAll(
-      channel.items.map(
-        (e) {
-          var author = e.author;
-          var content = e.content;
-          var source = e.source;
-          var description = e.description;
-          var pubDate = e.pubDate;
+        return sqlite.FeedItemsCompanion.insert(
+          feedId: feedId,
+          title: e.title ?? "",
+          author: author ?? "",
+          source: source != null ? source.value : "",
+          description: description ?? "",
+          content: content != null ? content.value : description ?? "",
+          link: e.link ?? "",
+          guid: e.guid ?? "",
+          publishedAt:
+              pubDate != null ? _parsePubDate(pubDate) : DateTime.now(),
+        );
+      },
+    ).toList();
 
-          return sqlite.FeedItemsCompanion.insert(
-            feedId: feedId,
-            title: e.title ?? "",
-            author: author ?? "",
-            source: source != null ? source.value : "",
-            description: description ?? "",
-            content: content != null ? content.value : description ?? "",
-            link: e.link ?? "",
-            guid: e.guid ?? "",
-            publishedAt:
-                pubDate != null ? _parsePubDate(pubDate) : DateTime.now(),
-          );
-        },
-      ).toList(),
-    );
+    unreadItemCount += inserts.length;
+
+    await storage.feedItemsDao.insertAll(inserts);
 
     await load();
   }
 
   @action
-  Future<void> fetch() async {
+  Future<void> update() async {
     if (id == _idUnreadMessagesFeed || id == _idStarredMessagesFeed) {
       return Future.value();
     }
@@ -477,6 +479,8 @@ abstract class _AppBase with Store {
       ).toList(),
     );
 
+    await feed.collectStatistics();
+
     feeds.add(feed);
 
     checkout(feed);
@@ -556,6 +560,8 @@ abstract class _AppBase with Store {
       ).toList(),
     );
 
+    await feed.collectStatistics();
+
     feeds.add(feed);
 
     checkout(feed);
@@ -613,6 +619,11 @@ abstract class _AppBase with Store {
     }
 
     return Future.value();
+  }
+
+  @action
+  Future<void> udpateAllFeeds() {
+    return Future.wait(feeds.map((element) => element.update()));
   }
 
   @action
