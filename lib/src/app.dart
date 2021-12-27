@@ -7,10 +7,10 @@ import 'package:html/parser.dart' as htmlparser;
 import 'package:html/dom.dart' as dom;
 import 'package:get_it/get_it.dart';
 
-import 'core/models.dart' as model;
+import 'core/models.dart' as core;
 
 class _FeedLogo extends StatelessWidget {
-  final model.Feed feed;
+  final core.Feed feed;
 
   const _FeedLogo(this.feed);
 
@@ -32,7 +32,7 @@ class _FeedLogo extends StatelessWidget {
 }
 
 class _Feed extends StatefulWidget {
-  final model.Feed feed;
+  final core.Feed feed;
 
   const _Feed(this.feed, {Key? key}) : super(key: key);
 
@@ -54,37 +54,37 @@ class _FeedState extends State<_Feed> {
         AppBar(
           actions: [
             Observer(
-              builder: (_) => PopupMenuButton<model.FeedItemFilter>(
+              builder: (_) => PopupMenuButton<core.FeedItemFilter>(
                 icon: const Icon(Icons.more_vert),
                 itemBuilder: (BuildContext context) => [
-                  PopupMenuItem<model.FeedItemFilter>(
-                    value: model.FeedItemFilter.starred,
+                  PopupMenuItem<core.FeedItemFilter>(
+                    value: core.FeedItemFilter.starred,
                     child: ListTile(
                       enabled: !feed.isStarredItemsAggregation,
                       leading: const Icon(Icons.star_border_outlined),
-                      selected: feed.filter == model.FeedItemFilter.starred,
+                      selected: feed.filter == core.FeedItemFilter.starred,
                       title: const Text('Only starred items'),
                     ),
                   ),
-                  PopupMenuItem<model.FeedItemFilter>(
-                    value: model.FeedItemFilter.unread,
+                  PopupMenuItem<core.FeedItemFilter>(
+                    value: core.FeedItemFilter.unread,
                     child: ListTile(
                       enabled: !feed.isUnreadItemsAggregation,
                       leading: const Icon(Icons.circle_outlined),
-                      selected: feed.filter == model.FeedItemFilter.unread,
+                      selected: feed.filter == core.FeedItemFilter.unread,
                       title: const Text('Only unread items'),
                     ),
                   ),
-                  PopupMenuItem<model.FeedItemFilter>(
-                    value: model.FeedItemFilter.all,
+                  PopupMenuItem<core.FeedItemFilter>(
+                    value: core.FeedItemFilter.all,
                     child: ListTile(
                       leading: const Icon(Icons.message_outlined),
-                      selected: feed.filter == model.FeedItemFilter.all,
+                      selected: feed.filter == core.FeedItemFilter.all,
                       title: const Text('All items'),
                     ),
                   ),
                 ],
-                onSelected: (model.FeedItemFilter result) {
+                onSelected: (core.FeedItemFilter result) {
                   feed.setItemFilter(result);
                 },
               ),
@@ -139,8 +139,8 @@ class _FeedState extends State<_Feed> {
 }
 
 class _FeedItem extends StatelessWidget {
-  final model.Feed feed;
-  final model.FeedItem item;
+  final core.Feed feed;
+  final core.FeedItem item;
 
   const _FeedItem({
     required this.feed,
@@ -149,7 +149,7 @@ class _FeedItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final app = GetIt.I.get<model.App>();
+    final app = GetIt.I.get<core.App>();
 
     final dom.Document document = htmlparser.parse("""
 <!DOCTYPE html>
@@ -258,7 +258,7 @@ class _FeedItem extends StatelessWidget {
 }
 
 class _FeedItemContent extends StatelessWidget {
-  final model.FeedItem item;
+  final core.FeedItem item;
 
   const _FeedItemContent(this.item);
 
@@ -488,7 +488,7 @@ class _SubscribeDialogState extends State<_SubscribeDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final app = GetIt.I.get<model.App>();
+    final app = GetIt.I.get<core.App>();
 
     return Dialog(
       child: Container(
@@ -582,7 +582,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final app = GetIt.I.get<model.App>();
+    final app = GetIt.I.get<core.App>();
     final feeds = app.feeds;
 
     return Scaffold(

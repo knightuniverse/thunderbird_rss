@@ -7,7 +7,6 @@ import 'src/core/models.dart' as model;
 import 'src/widgets/item_content.dart';
 import 'src/widgets/items.dart';
 import 'src/widgets/navigation.dart';
-import 'src/widgets/subscription_dialog.dart';
 
 void main() async {
   final storage = sqlite.ThunderBirdRSSDataBase(sqlite.openDBConnection());
@@ -54,7 +53,7 @@ class HomePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          const Navigation(),
+          Navigation(),
           Expanded(child: Items()),
           // Expanded(child: _PostContent()),
         ],

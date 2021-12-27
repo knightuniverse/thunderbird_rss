@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 
+enum WhyFarther { harder, smarter, selfStarter, tradingCharter }
+
 class Item extends StatelessWidget {
   const Item({Key? key}) : super(key: key);
 
