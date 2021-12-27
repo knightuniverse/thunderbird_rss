@@ -7,14 +7,14 @@ import 'package:html/dom.dart' as dom;
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
 
-import 'package:thunderbird_rss/src/core/models.dart' as core;
+import 'package:thunderbird_rss/src/core/models.dart' as model;
 import 'package:thunderbird_rss/src/widgets/feed_fav_icon.dart';
 
-enum _FeedItemAction { read, remove, star, unread }
+enum _FeedItemAction { markAsRead, remove, star, markAsUnread }
 
 class FeedItem extends StatefulWidget {
-  final core.Feed feed;
-  final core.FeedItem item;
+  final model.Feed feed;
+  final model.FeedItem item;
 
   const FeedItem(this.item, this.feed, {Key? key}) : super(key: key);
 
@@ -159,14 +159,14 @@ class _FeedItemState extends State<FeedItem> {
           itemBuilder: (BuildContext context) =>
               <PopupMenuEntry<_FeedItemAction>>[
             const PopupMenuItem<_FeedItemAction>(
-              value: _FeedItemAction.read,
+              value: _FeedItemAction.markAsRead,
               child: ListTile(
                 leading: Icon(Icons.check),
                 title: Text('Mark as read'),
               ),
             ),
             const PopupMenuItem<_FeedItemAction>(
-              value: _FeedItemAction.unread,
+              value: _FeedItemAction.markAsUnread,
               child: ListTile(
                 leading: Icon(Icons.mark_as_unread),
                 title: Text('Mark as unread'),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:get_it/get_it.dart';
 
 import 'src/core/sqlite.dart' as sqlite;
@@ -48,13 +49,22 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final app = GetIt.I.get<model.App>();
+
     return Scaffold(
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           FeedsNavigation(),
-          Expanded(child: FeedItemsListView()),
+          Observer(
+            builder: (BuildContext context) {
+              var feed = app.selectedFeed;
+              return Expanded(
+                child: feed == null ? Container() : FeedItemsListView(feed),
+              );
+            },
+          ),
           // Expanded(child: _PostContent()),
         ],
       ),

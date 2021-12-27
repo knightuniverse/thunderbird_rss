@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:get_it/get_it.dart';
 
-import 'package:thunderbird_rss/src/core/models.dart' as core;
+import 'package:thunderbird_rss/src/core/models.dart' as model;
 
 import 'subscription_dialog.dart';
 import 'feed_fav_icon.dart';
 
 class _FeedsNavigationState extends State<FeedsNavigation> {
-  final app = GetIt.I.get<core.App>();
+  final app = GetIt.I.get<model.App>();
 
   bool _updating = false;
   bool _subscribing = false;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'package:thunderbird_rss/src/core/models.dart' as core;
+import 'package:thunderbird_rss/src/core/models.dart' as model;
 
 class FeedFavIcon extends StatelessWidget {
-  final core.Feed feed;
+  final model.Feed feed;
   double? size;
 
   FeedFavIcon(this.feed, {Key? key, this.size}) : super(key: key);

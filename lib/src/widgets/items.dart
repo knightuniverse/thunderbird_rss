@@ -2,32 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
-import 'package:thunderbird_rss/src/core/models.dart' as core;
+import 'package:thunderbird_rss/src/core/models.dart' as model;
 
-import 'feed_fav_icon.dart';
 import 'item.dart';
 
-enum WhyFarther { harder, smarter, selfStarter, tradingCharter }
+enum _FeedAction { markItemsAsRead, markItemsAsUnread, star, removeItems }
 
 class FeedItemsListView extends StatefulWidget {
-  const FeedItemsListView({Key? key}) : super(key: key);
+  final model.Feed feed;
+
+  const FeedItemsListView(this.feed, {Key? key}) : super(key: key);
 
   @override
   _FeedItemsListViewState createState() => _FeedItemsListViewState();
 }
 
 class _FeedItemsListViewState extends State<FeedItemsListView> {
-  final app = GetIt.I.get<core.App>();
+  final app = GetIt.I.get<model.App>();
 
   @override
   Widget build(BuildContext context) {
-    var feed = app.selectedFeed;
-
-    if (feed == null) {
-      //  TODO Empty items
-      return Container();
-    }
-
+    var feed = widget.feed;
     var items = feed.items;
     var listView = Observer(
       builder: (BuildContext context) {
@@ -92,23 +87,23 @@ class _FeedItemsListViewState extends State<FeedItemsListView> {
                       ),
                       PopupMenuButton(
                         icon: const Icon(Icons.more_vert),
-                        onSelected: (WhyFarther result) {},
+                        onSelected: (_FeedAction result) {},
                         itemBuilder: (BuildContext context) =>
-                            <PopupMenuEntry<WhyFarther>>[
-                          const PopupMenuItem<WhyFarther>(
-                            value: WhyFarther.harder,
+                            <PopupMenuEntry<_FeedAction>>[
+                          const PopupMenuItem<_FeedAction>(
+                            value: _FeedAction.markItemsAsRead,
                             child: Text('Working a lot harder'),
                           ),
-                          const PopupMenuItem<WhyFarther>(
-                            value: WhyFarther.smarter,
+                          const PopupMenuItem<_FeedAction>(
+                            value: _FeedAction.markItemsAsUnread,
                             child: Text('Being a lot smarter'),
                           ),
-                          const PopupMenuItem<WhyFarther>(
-                            value: WhyFarther.selfStarter,
+                          const PopupMenuItem<_FeedAction>(
+                            value: _FeedAction.star,
                             child: Text('Being a self-starter'),
                           ),
-                          const PopupMenuItem<WhyFarther>(
-                            value: WhyFarther.tradingCharter,
+                          const PopupMenuItem<_FeedAction>(
+                            value: _FeedAction.removeItems,
                             child: Text('Placed in charge of trading charter'),
                           ),
                         ],
