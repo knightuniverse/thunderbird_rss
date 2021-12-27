@@ -1,15 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 
+import 'package:thunderbird_rss/src/core/models.dart' as core;
+
+import 'feed_fav_icon.dart';
 import 'item.dart';
 
 enum WhyFarther { harder, smarter, selfStarter, tradingCharter }
 
-class Items extends StatelessWidget {
-  const Items({Key? key}) : super(key: key);
+class FeedItemsListView extends StatefulWidget {
+  const FeedItemsListView({Key? key}) : super(key: key);
+
+  @override
+  _FeedItemsListViewState createState() => _FeedItemsListViewState();
+}
+
+class _FeedItemsListViewState extends State<FeedItemsListView> {
+  final app = GetIt.I.get<core.App>();
 
   @override
   Widget build(BuildContext context) {
+    var feed = app.selectedFeed;
+
+    if (feed == null) {
+      //  TODO Empty items
+      return Container();
+    }
+
+    var items = feed.items;
+    var listView = Observer(
+      builder: (BuildContext context) {
+        return ListView.separated(
+          itemBuilder: (BuildContext context, int i) {
+            return FeedItem(items[i], feed);
+          },
+          separatorBuilder: (BuildContext context, int i) {
+            return const Divider(
+              indent: 64,
+              thickness: 1,
+            );
+          },
+          itemCount: items.length,
+        );
+      },
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.start,
@@ -26,7 +62,7 @@ class Items extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "CNBETA",
+                    feed.title,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   Row(
@@ -95,27 +131,28 @@ class Items extends StatelessWidget {
         Expanded(
           child: SizedBox(
             width: 840,
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                Item(),
-                Divider(
-                  indent: 64,
-                  thickness: 1,
-                ),
-                Item(),
-                Divider(
-                  indent: 64,
-                  thickness: 1,
-                ),
-                Item(),
-                Divider(
-                  indent: 64,
-                  thickness: 1,
-                ),
-                Item(),
-              ],
-            ),
+            child: listView,
+            // child: ListView(
+            //   padding: EdgeInsets.zero,
+            //   children: [
+            //     FeedItem(),
+            //     Divider(
+            //       indent: 64,
+            //       thickness: 1,
+            //     ),
+            //     FeedItem(),
+            //     Divider(
+            //       indent: 64,
+            //       thickness: 1,
+            //     ),
+            //     FeedItem(),
+            //     Divider(
+            //       indent: 64,
+            //       thickness: 1,
+            //     ),
+            //     FeedItem(),
+            //   ],
+            // ),
           ),
         ),
       ],

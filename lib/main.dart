@@ -6,7 +6,7 @@ import 'src/core/models.dart' as model;
 
 import 'src/widgets/item_content.dart';
 import 'src/widgets/items.dart';
-import 'src/widgets/navigation.dart';
+import 'src/widgets/nav.dart';
 
 void main() async {
   final storage = sqlite.ThunderBirdRSSDataBase(sqlite.openDBConnection());
@@ -14,7 +14,7 @@ void main() async {
   GetIt.I.registerSingleton<sqlite.ThunderBirdRSSDataBase>(storage);
   GetIt.I.registerSingleton<model.App>(app);
 
-  app.init();
+  await app.init();
   // const atom = 'https://www.theverge.com/rss/index.xml';
   // const rss = 'https://developer.apple.com/news/releases/rss/releases.rss';
   // final subscriptions = Subscriptions(sqlite);
@@ -53,8 +53,8 @@ class HomePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          Navigation(),
-          Expanded(child: Items()),
+          FeedsNavigation(),
+          Expanded(child: FeedItemsListView()),
           // Expanded(child: _PostContent()),
         ],
       ),

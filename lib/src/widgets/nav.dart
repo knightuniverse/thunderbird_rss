@@ -5,33 +5,13 @@ import 'package:get_it/get_it.dart';
 import 'package:thunderbird_rss/src/core/models.dart' as core;
 
 import 'subscription_dialog.dart';
+import 'feed_fav_icon.dart';
 
-class _Logo extends StatelessWidget {
-  final core.Feed feed;
-
-  const _Logo(this.feed);
-
-  @override
-  Widget build(BuildContext context) {
-    final IconThemeData iconTheme = IconTheme.of(context);
-
-    return feed.icon.isNotEmpty
-        ? SizedBox(
-            child: Image.network(
-              feed.icon,
-              fit: BoxFit.fill,
-            ),
-            height: iconTheme.size,
-            width: iconTheme.size,
-          )
-        : const Icon(Icons.rss_feed);
-  }
-}
-
-class Navigation extends StatelessWidget {
+class _FeedsNavigationState extends State<FeedsNavigation> {
   final app = GetIt.I.get<core.App>();
 
-  Navigation({Key? key}) : super(key: key);
+  bool _updating = false;
+  bool _subscribing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +31,7 @@ class Navigation extends StatelessWidget {
                   maximumSize: const Size.fromHeight(48),
                 ),
                 onPressed: () {
+                  //  TODO Add Feed
                   showDialog(
                     context: context,
                     builder: (_) => SubscriptionDialog(),
@@ -73,8 +54,22 @@ class Navigation extends StatelessWidget {
                 children: [
                   const Text('RSS'),
                   IconButton(
-                    onPressed: () {},
                     icon: const Icon(Icons.refresh),
+                    onPressed: () async {
+                      if (_updating) {
+                        return;
+                      }
+
+                      setState(() {
+                        _updating = true;
+                      });
+
+                      await app.udpateAllFeeds();
+
+                      setState(() {
+                        _updating = false;
+                      });
+                    },
                   )
                 ],
               ),
@@ -82,7 +77,7 @@ class Navigation extends StatelessWidget {
             ...feeds
                 .map(
                   (feed) => ListTile(
-                    leading: _Logo(feed),
+                    leading: FeedFavIcon(feed),
                     title: SizedBox(
                       width: 80,
                       child: Text(
@@ -136,5 +131,14 @@ class Navigation extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class FeedsNavigation extends StatefulWidget {
+  const FeedsNavigation({Key? key}) : super(key: key);
+
+  @override
+  State<StatefulWidget> createState() {
+    return _FeedsNavigationState();
   }
 }
