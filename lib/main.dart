@@ -28,6 +28,8 @@ void main() async {
   runApp(const ThunderbirdRSSApp());
 }
 
+enum WhyFarther { harder, smarter, selfStarter, tradingCharter }
+
 class ThunderbirdRSSApp extends StatelessWidget {
   const ThunderbirdRSSApp({Key? key}) : super(key: key);
 
@@ -97,6 +99,7 @@ class _Navigation extends StatelessWidget {
                 ListTile(
                   leading: Icon(Icons.message),
                   title: Text('Messages'),
+                  trailing: Text("100"),
                   onTap: () {},
                 ),
                 ListTile(
@@ -152,7 +155,7 @@ class _Item extends StatelessWidget {
           width: 48,
           child: Image.network("http://via.placeholder.com/48x48"),
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,28 +176,39 @@ class _Item extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Lorem Ipsum",
-                        style: Theme.of(context).textTheme.subtitle1,
-                      ),
-                      Text(
-                        "Neque porro quisquam est qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit...",
-                        style: Theme.of(context).textTheme.bodyText2?.copyWith(
-                              color: Theme.of(context).textTheme.caption!.color,
-                            ),
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Lorem Ipsum",
+                          softWrap: true,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.subtitle1,
+                        ),
+                        Text(
+                          "Neque porro quisquam est qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.",
+                          softWrap: true,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyText2
+                              ?.copyWith(
+                                color:
+                                    Theme.of(context).textTheme.caption!.color,
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(width: 16),
+                  const SizedBox(width: 16),
                   SizedBox(
                     height: 56,
                     width: 100,
@@ -204,6 +218,31 @@ class _Item extends StatelessWidget {
               ),
             ],
           ),
+        ),
+        const SizedBox(width: 16),
+        Checkbox(value: false, onChanged: (value) {}),
+        const SizedBox(width: 16),
+        PopupMenuButton(
+          icon: Icon(Icons.more_vert),
+          onSelected: (WhyFarther result) {},
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<WhyFarther>>[
+            const PopupMenuItem<WhyFarther>(
+              value: WhyFarther.harder,
+              child: Text('Working a lot harder'),
+            ),
+            const PopupMenuItem<WhyFarther>(
+              value: WhyFarther.smarter,
+              child: Text('Being a lot smarter'),
+            ),
+            const PopupMenuItem<WhyFarther>(
+              value: WhyFarther.selfStarter,
+              child: Text('Being a self-starter'),
+            ),
+            const PopupMenuItem<WhyFarther>(
+              value: WhyFarther.tradingCharter,
+              child: Text('Placed in charge of trading charter'),
+            ),
+          ],
         ),
       ],
     );
@@ -259,10 +298,33 @@ class _Items extends StatelessWidget {
                         onPressed: () {},
                         icon: Icon(Icons.delete),
                       ),
-                      IconButton(
-                        onPressed: () {},
+                      PopupMenuButton(
                         icon: Icon(Icons.more_vert),
+                        onSelected: (WhyFarther result) {},
+                        itemBuilder: (BuildContext context) =>
+                            <PopupMenuEntry<WhyFarther>>[
+                          const PopupMenuItem<WhyFarther>(
+                            value: WhyFarther.harder,
+                            child: Text('Working a lot harder'),
+                          ),
+                          const PopupMenuItem<WhyFarther>(
+                            value: WhyFarther.smarter,
+                            child: Text('Being a lot smarter'),
+                          ),
+                          const PopupMenuItem<WhyFarther>(
+                            value: WhyFarther.selfStarter,
+                            child: Text('Being a self-starter'),
+                          ),
+                          const PopupMenuItem<WhyFarther>(
+                            value: WhyFarther.tradingCharter,
+                            child: Text('Placed in charge of trading charter'),
+                          ),
+                        ],
                       ),
+                      // IconButton(
+                      //   onPressed: () {},
+                      //   icon: Icon(Icons.more_vert),
+                      // ),
                     ],
                   )
                 ],
@@ -482,8 +544,8 @@ class HomePage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           _Navigation(),
-          // Expanded(child: _Items()),
-          Expanded(child: _PostContent()),
+          Expanded(child: _Items()),
+          // Expanded(child: _PostContent()),
         ],
       ),
     );
