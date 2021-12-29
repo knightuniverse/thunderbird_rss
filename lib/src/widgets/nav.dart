@@ -55,6 +55,7 @@ class _FeedsNavigationState extends State<FeedsNavigation> {
                   const Text('RSS'),
                   IconButton(
                     icon: const Icon(Icons.refresh),
+                    tooltip: "Upladte all feeds",
                     onPressed: () async {
                       if (_updating) {
                         return;

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:html/parser.dart' as htmlparser;
@@ -10,19 +11,48 @@ import 'package:intl/intl.dart';
 import 'package:thunderbird_rss/src/core/models.dart' as model;
 import 'package:thunderbird_rss/src/widgets/feed_fav_icon.dart';
 
+import 'item_content.dart';
+
 enum _FeedItemAction { markAsRead, remove, star, markAsUnread }
 
-class FeedItem extends StatefulWidget {
+class _OpenContainerWrapper extends StatelessWidget {
+  const _OpenContainerWrapper({
+    required this.closedBuilder,
+    required this.openBuilder,
+    required this.transitionType,
+  });
+
+  final CloseContainerBuilder closedBuilder;
+  final OpenContainerBuilder<void> openBuilder;
+  final ContainerTransitionType transitionType;
+
+  @override
+  Widget build(BuildContext context) {
+    return OpenContainer<void>(
+      closedColor: Colors.transparent,
+      middleColor: Colors.transparent,
+      openColor: Colors.transparent,
+      closedElevation: 0,
+      openElevation: 0,
+      transitionType: transitionType,
+      openBuilder: openBuilder,
+      tappable: true,
+      closedBuilder: closedBuilder,
+    );
+  }
+}
+
+class _ListTile extends StatefulWidget {
   final model.Feed feed;
   final model.FeedItem item;
 
-  const FeedItem(this.item, this.feed, {Key? key}) : super(key: key);
+  const _ListTile(this.item, this.feed, {Key? key}) : super(key: key);
 
   @override
-  _FeedItemState createState() => _FeedItemState();
+  _ListTileState createState() => _ListTileState();
 }
 
-class _FeedItemState extends State<FeedItem> {
+class _ListTileState extends State<_ListTile> {
   @override
   Widget build(BuildContext context) {
     var feed = widget.feed;
@@ -192,3 +222,46 @@ class _FeedItemState extends State<FeedItem> {
     );
   }
 }
+
+class FeedItem extends StatelessWidget {
+  final model.Feed feed;
+  final model.FeedItem item;
+
+  const FeedItem(this.item, this.feed, {Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return _ListTile(item, feed);
+  }
+}
+
+// class FeedItem extends StatelessWidget {
+//   final model.Feed feed;
+//   final model.FeedItem item;
+
+//   const FeedItem(this.item, this.feed, {Key? key}) : super(key: key);
+
+//   @override
+//   Widget build(context) {
+//     return _OpenContainerWrapper(
+//       transitionType: ContainerTransitionType.fadeThrough,
+//       closedBuilder: (context, action) {
+//         return _ListTile(item, feed);
+//       },
+//       openBuilder: (context, action) {
+//         return Row(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           mainAxisAlignment: MainAxisAlignment.start,
+//           children: [
+//             SizedBox(
+//               width: 256,
+//             ),
+//             Expanded(
+//               child: ItemContent(),
+//             ),
+//           ],
+//         );
+//       },
+//     );
+//   }
+// }

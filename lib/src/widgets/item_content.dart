@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
 
 class ItemContent extends StatelessWidget {
-  const ItemContent({Key? key}) : super(key: key);
+  final VoidCallback onClose;
+
+  const ItemContent(this.onClose, {Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +48,9 @@ class ItemContent extends StatelessWidget {
                         icon: const Icon(Icons.star),
                       ),
                       IconButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          onClose();
+                        },
                         icon: const Icon(Icons.close),
                       ),
                     ],

@@ -1,23 +1,29 @@
+import 'package:animations/animations.dart';
+
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
 import 'package:thunderbird_rss/src/core/models.dart' as model;
+import 'package:thunderbird_rss/src/widgets/item_content.dart';
 
 import 'item.dart';
 
 enum _FeedAction { markItemsAsRead, markItemsAsUnread, star, removeItems }
 
-class FeedItemsListView extends StatefulWidget {
-  final model.Feed feed;
+typedef OnItemClick = void Function(model.FeedItem item);
 
-  const FeedItemsListView(this.feed, {Key? key}) : super(key: key);
+class _ListView extends StatefulWidget {
+  final model.Feed feed;
+  final OnItemClick onItemClick;
+
+  const _ListView(this.feed, this.onItemClick, {Key? key}) : super(key: key);
 
   @override
-  _FeedItemsListViewState createState() => _FeedItemsListViewState();
+  _ListViewState createState() => _ListViewState();
 }
 
-class _FeedItemsListViewState extends State<FeedItemsListView> {
+class _ListViewState extends State<_ListView> {
   final app = GetIt.I.get<model.App>();
 
   @override
@@ -28,7 +34,12 @@ class _FeedItemsListViewState extends State<FeedItemsListView> {
       builder: (BuildContext context) {
         return ListView.separated(
           itemBuilder: (BuildContext context, int i) {
-            return FeedItem(items[i], feed);
+            return GestureDetector(
+              child: FeedItem(items[i], feed),
+              onTap: () {
+                widget.onItemClick(items[i]);
+              },
+            );
           },
           separatorBuilder: (BuildContext context, int i) {
             return const Divider(
@@ -127,30 +138,84 @@ class _FeedItemsListViewState extends State<FeedItemsListView> {
           child: SizedBox(
             width: 840,
             child: listView,
-            // child: ListView(
-            //   padding: EdgeInsets.zero,
-            //   children: [
-            //     FeedItem(),
-            //     Divider(
-            //       indent: 64,
-            //       thickness: 1,
-            //     ),
-            //     FeedItem(),
-            //     Divider(
-            //       indent: 64,
-            //       thickness: 1,
-            //     ),
-            //     FeedItem(),
-            //     Divider(
-            //       indent: 64,
-            //       thickness: 1,
-            //     ),
-            //     FeedItem(),
-            //   ],
-            // ),
           ),
         ),
       ],
     );
   }
 }
+
+class FeedItemsListView extends StatefulWidget {
+  final model.Feed feed;
+
+  const FeedItemsListView(this.feed, {Key? key}) : super(key: key);
+
+  @override
+  _FeedItemsListViewState createState() => _FeedItemsListViewState();
+}
+
+class _FeedItemsListViewState extends State<FeedItemsListView> {
+  bool _isListView = true;
+
+  @override
+  Widget build(BuildContext context) {
+    var feed = widget.feed;
+
+    return PageTransitionSwitcher(
+      duration: const Duration(milliseconds: 400),
+      reverse: !_isListView,
+      transitionBuilder: (
+        Widget child,
+        Animation<double> animation,
+        Animation<double> secondaryAnimation,
+      ) {
+        return SharedAxisTransition(
+          child: child,
+          animation: animation,
+          secondaryAnimation: secondaryAnimation,
+          transitionType: SharedAxisTransitionType.vertical,
+        );
+      },
+      child: _isListView
+          ? _ListView(feed, (item) {
+              setState(() {
+                _isListView = false;
+              });
+            })
+          : ItemContent(() {
+              setState(() {
+                _isListView = true;
+              });
+            }),
+    );
+  }
+}
+
+// class FeedItemsListView extends StatelessWidget {
+//   final model.Feed feed;
+
+//   const FeedItemsListView(this.feed, {Key? key}) : super(key: key);
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return _ListView(feed);
+
+//     return PageTransitionSwitcher(
+//       duration: const Duration(milliseconds: 300),
+//       reverse: !_isLoggedIn,
+//       transitionBuilder: (
+//         Widget child,
+//         Animation<double> animation,
+//         Animation<double> secondaryAnimation,
+//       ) {
+//         return SharedAxisTransition(
+//           child: child,
+//           animation: animation,
+//           secondaryAnimation: secondaryAnimation,
+//           transitionType: _transitionType!,
+//         );
+//       },
+//       child: _isLoggedIn ? _CoursePage() : _SignInPage(),
+//     );
+//   }
+// }
