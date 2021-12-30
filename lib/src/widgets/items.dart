@@ -1,5 +1,4 @@
 import 'package:animations/animations.dart';
-
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -9,9 +8,74 @@ import 'package:thunderbird_rss/src/widgets/item_content.dart';
 
 import 'item.dart';
 
-enum _FeedAction { markItemsAsRead, markItemsAsUnread, star, removeItems }
+enum _FeedAction {
+  onlyStarredItems,
+  onlyUnreadItems,
+}
 
 typedef OnItemClick = void Function(model.FeedItem item);
+
+class _ExtraSettings extends StatelessWidget {
+  final model.Feed feed;
+
+  const _ExtraSettings(this.feed, {Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    var onlyUnreadItems = PopupMenuItem<_FeedAction>(
+      value: _FeedAction.onlyUnreadItems,
+      child: ListTile(
+        leading: Observer(
+          builder: (BuildContext context) {
+            return Checkbox(
+              value: feed.onlyUnreadItems,
+              onChanged: (value) {
+                feed.onlyUnreadItems = value == true;
+              },
+            );
+          },
+        ),
+        title: Text("Only unread"),
+      ),
+    );
+
+    var onlyStarredItems = PopupMenuItem<_FeedAction>(
+      value: _FeedAction.onlyStarredItems,
+      child: ListTile(
+        leading: Observer(
+          builder: (BuildContext context) {
+            return Checkbox(
+              value: feed.onlyStarredItems,
+              onChanged: (value) {
+                feed.onlyStarredItems = value == true;
+              },
+            );
+          },
+        ),
+        title: Text("Only starred"),
+      ),
+    );
+
+    return PopupMenuButton(
+      icon: const Icon(Icons.more_vert),
+      onSelected: (_FeedAction result) {
+        switch (result) {
+          case _FeedAction.onlyStarredItems:
+            // feed.onlyStarredItems = !feed.onlyStarredItems;
+            break;
+          case _FeedAction.onlyUnreadItems:
+            // feed.onlyUnreadItems = !feed.onlyUnreadItems;
+            break;
+          default:
+        }
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<_FeedAction>>[
+        onlyUnreadItems,
+        onlyStarredItems,
+      ],
+    );
+  }
+}
 
 class _ListView extends StatefulWidget {
   final model.Feed feed;
@@ -26,6 +90,31 @@ class _ListView extends StatefulWidget {
 class _ListViewState extends State<_ListView> {
   final app = GetIt.I.get<model.App>();
 
+  var _multiSelectEnabled = false;
+  var _updating = false;
+  final _selectedItems = <model.FeedItem>{};
+
+  _update() async {
+    setState(() {
+      _updating = true;
+    });
+    await widget.feed.update();
+    setState(() {
+      _updating = false;
+    });
+  }
+
+  _toggleMultiSelect() {
+    setState(() {
+      var enabled = !_multiSelectEnabled;
+      _multiSelectEnabled = enabled;
+
+      if (!enabled) {
+        _selectedItems.clear();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     var feed = widget.feed;
@@ -34,8 +123,21 @@ class _ListViewState extends State<_ListView> {
       builder: (BuildContext context) {
         return ListView.separated(
           itemBuilder: (BuildContext context, int i) {
-            return GestureDetector(
-              child: FeedItem(items[i], feed),
+            var item = items[i];
+
+            return FeedItem(
+              item,
+              feed,
+              selectable: _multiSelectEnabled,
+              selected: _selectedItems.contains(item),
+              onSelectionChange: (item, selected) {
+                if (selected) {
+                  _selectedItems.add(item);
+                } else {
+                  _selectedItems.remove(item);
+                }
+                setState(() {});
+              },
               onTap: () {
                 widget.onItemClick(items[i]);
               },
@@ -74,55 +176,32 @@ class _ListViewState extends State<_ListView> {
                   Row(
                     children: [
                       IconButton(
-                        onPressed: () {},
+                        onPressed: _updating ? null : _update,
                         icon: const Icon(Icons.refresh),
                       ),
                       IconButton(
-                        onPressed: () {},
+                        onPressed: _toggleMultiSelect,
                         icon: const Icon(Icons.checklist_rtl),
                       ),
-                      //  hide by defualts
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(Icons.check),
-                      ),
-                      //  hide by defualts
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(Icons.star),
-                      ),
-                      //  hide by defualts
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(Icons.delete),
-                      ),
-                      PopupMenuButton(
-                        icon: const Icon(Icons.more_vert),
-                        onSelected: (_FeedAction result) {},
-                        itemBuilder: (BuildContext context) =>
-                            <PopupMenuEntry<_FeedAction>>[
-                          const PopupMenuItem<_FeedAction>(
-                            value: _FeedAction.markItemsAsRead,
-                            child: Text('Working a lot harder'),
-                          ),
-                          const PopupMenuItem<_FeedAction>(
-                            value: _FeedAction.markItemsAsUnread,
-                            child: Text('Being a lot smarter'),
-                          ),
-                          const PopupMenuItem<_FeedAction>(
-                            value: _FeedAction.star,
-                            child: Text('Being a self-starter'),
-                          ),
-                          const PopupMenuItem<_FeedAction>(
-                            value: _FeedAction.removeItems,
-                            child: Text('Placed in charge of trading charter'),
-                          ),
-                        ],
-                      ),
-                      // IconButton(
-                      //   onPressed: () {},
-                      //   icon: Icon(Icons.more_vert),
-                      // ),
+                      _multiSelectEnabled && _selectedItems.isNotEmpty
+                          ? IconButton(
+                              onPressed: () {},
+                              icon: const Icon(Icons.check),
+                            )
+                          : Container(),
+                      _multiSelectEnabled && _selectedItems.isNotEmpty
+                          ? IconButton(
+                              onPressed: () {},
+                              icon: const Icon(Icons.star),
+                            )
+                          : Container(),
+                      _multiSelectEnabled && _selectedItems.isNotEmpty
+                          ? IconButton(
+                              onPressed: () {},
+                              icon: const Icon(Icons.delete),
+                            )
+                          : Container(),
+                      _ExtraSettings(feed),
                     ],
                   )
                 ],
@@ -177,45 +256,21 @@ class _FeedItemsListViewState extends State<FeedItemsListView> {
         );
       },
       child: _isListView
-          ? _ListView(feed, (item) {
-              setState(() {
-                _isListView = false;
-              });
-            })
-          : ItemContent(() {
-              setState(() {
-                _isListView = true;
-              });
-            }),
+          ? _ListView(
+              feed,
+              (item) {
+                setState(() {
+                  _isListView = false;
+                });
+              },
+            )
+          : ItemContent(
+              () {
+                setState(() {
+                  _isListView = true;
+                });
+              },
+            ),
     );
   }
 }
-
-// class FeedItemsListView extends StatelessWidget {
-//   final model.Feed feed;
-
-//   const FeedItemsListView(this.feed, {Key? key}) : super(key: key);
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return _ListView(feed);
-
-//     return PageTransitionSwitcher(
-//       duration: const Duration(milliseconds: 300),
-//       reverse: !_isLoggedIn,
-//       transitionBuilder: (
-//         Widget child,
-//         Animation<double> animation,
-//         Animation<double> secondaryAnimation,
-//       ) {
-//         return SharedAxisTransition(
-//           child: child,
-//           animation: animation,
-//           secondaryAnimation: secondaryAnimation,
-//           transitionType: _transitionType!,
-//         );
-//       },
-//       child: _isLoggedIn ? _CoursePage() : _SignInPage(),
-//     );
-//   }
-// }

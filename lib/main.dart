@@ -15,17 +15,6 @@ void main() async {
   GetIt.I.registerSingleton<model.App>(app);
 
   await app.init();
-  // const atom = 'https://www.theverge.com/rss/index.xml';
-  // const rss = 'https://developer.apple.com/news/releases/rss/releases.rss';
-  // final subscriptions = Subscriptions(sqlite);
-  // await subscriptions.add(atom);
-  // await subscriptions.add(rss);
-  // print(subscriptions.feeds.length);
-
-  // https://www.vgtime.com/rss.jhtml
-  // https://rss.cnbeta.com/rss
-  // https://feeds.appinn.com/appinns/
-  // https://www.ifanr.com/feed
 
   runApp(const ThunderbirdRSSApp());
 }
