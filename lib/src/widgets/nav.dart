@@ -75,6 +75,14 @@ class _FeedsNavigationState extends State<FeedsNavigation> {
                 ],
               ),
             ),
+            ListTile(
+              leading: const Icon(Icons.message),
+              title: const Text('All'),
+              trailing: Text("${app.all.unreadItemCount}"),
+              onTap: () {
+                app.checkout(app.all);
+              },
+            ),
             ...feeds
                 .map(
                   (feed) => ListTile(

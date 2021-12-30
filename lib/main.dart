@@ -5,7 +5,6 @@ import 'package:get_it/get_it.dart';
 import 'src/core/sqlite.dart' as sqlite;
 import 'src/core/models.dart' as model;
 
-import 'src/widgets/item_content.dart';
 import 'src/widgets/items.dart';
 import 'src/widgets/nav.dart';
 
@@ -56,7 +55,7 @@ class HomePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          FeedsNavigation(),
+          const FeedsNavigation(),
           Observer(
             builder: (BuildContext context) {
               var feed = app.selectedFeed;

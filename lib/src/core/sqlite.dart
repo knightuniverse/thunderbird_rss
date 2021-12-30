@@ -100,7 +100,7 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
     int limit = 20,
     int offset = 0,
     int? feedId,
-    bool? isRead,
+    bool? isUnread,
     bool? isStarred,
   }) {
     final query = select(feedItems);
@@ -109,8 +109,8 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
       query.where((tbl) => tbl.feedId.equals(feedId));
     }
 
-    if (isRead != null) {
-      query.where((tbl) => tbl.read.equals(isRead));
+    if (isUnread != null) {
+      query.where((tbl) => tbl.read.equals(!isUnread));
     }
 
     if (isStarred != null) {
@@ -131,13 +131,13 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
   Future<List<FeedItem>> findItems({
     int limit = 20,
     int offset = 0,
-    bool? isRead,
+    bool? isUnread,
     bool? isStarred,
   }) {
     return _findItems(
       limit: limit,
       offset: offset,
-      isRead: isRead,
+      isUnread: isUnread,
       isStarred: isStarred,
     );
   }
@@ -146,14 +146,14 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
     int feedId, {
     int limit = 20,
     int offset = 0,
-    bool? isRead,
+    bool? isUnread,
     bool? isStarred,
   }) {
     return _findItems(
       limit: limit,
       offset: offset,
       feedId: feedId,
-      isRead: isRead,
+      isUnread: isUnread,
       isStarred: isStarred,
     );
   }
@@ -166,7 +166,7 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
     return _findItems(
       limit: limit,
       offset: offset,
-      isRead: false,
+      isUnread: false,
       isStarred: isStarred,
     );
   }
@@ -174,12 +174,12 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
   Future<List<FeedItem>> findStarredItems({
     int limit = 20,
     int offset = 0,
-    bool? isRead,
+    bool? isUnread,
   }) {
     return _findItems(
       limit: limit,
       offset: offset,
-      isRead: isRead,
+      isUnread: isUnread,
       isStarred: true,
     );
   }
@@ -273,7 +273,7 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
     int limit = 20,
     int offset = 0,
     int? feedId,
-    bool? isRead,
+    bool? isUnread,
     bool? isStarred,
   }) {
     final query = select(feedItems);
@@ -285,8 +285,8 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
       query.where((tbl) => tbl.content.like("%$keyword%"));
     }
 
-    if (isRead != null) {
-      query.where((tbl) => tbl.read.equals(isRead));
+    if (isUnread != null) {
+      query.where((tbl) => tbl.read.equals(!isUnread));
     }
 
     if (isStarred != null) {

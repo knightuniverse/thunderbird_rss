@@ -41,10 +41,6 @@ class ItemContent extends StatelessWidget {
                     children: [
                       IconButton(
                         onPressed: () {},
-                        icon: const Icon(Icons.check),
-                      ),
-                      IconButton(
-                        onPressed: () {},
                         icon: const Icon(Icons.star),
                       ),
                       IconButton(
