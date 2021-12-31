@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:html/parser.dart' as htmlparser;
 import 'package:html/dom.dart' as dom;
 import 'package:http/http.dart' as http;
@@ -126,8 +128,8 @@ abstract class _FeedBase with Store {
   ObservableList<FeedItem> items = ObservableList<FeedItem>.of([]);
 
   final int _limit = 200;
-
-  int _offset = 0;
+  int _next = 0;
+  int _prev = 0;
 
   _FeedBase(
     this.storage, {
@@ -230,7 +232,8 @@ abstract class _FeedBase with Store {
 
   @action
   void reset() {
-    _offset = 0;
+    _next = 0;
+    _prev = 0;
     keyword = "";
     items.clear();
   }
@@ -253,70 +256,48 @@ abstract class _FeedBase with Store {
   }
 
   @action
-  _loadMessages() async {
-    if (keyword.isEmpty) {
-      items.addAll((await storage.feedItemsDao.findItemsOfFeed(
-        id,
-        limit: _limit,
-        offset: _offset,
-        isUnread: onlyUnreadItems == true ? true : null,
-        isStarred: onlyStarredItems == true ? true : null,
-      ))
-          .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
-    } else {
-      items.addAll((await storage.feedItemsDao.search(
-        keyword,
-        limit: _limit,
-        offset: _offset,
-        feedId: id,
-        isUnread: onlyUnreadItems == true ? true : null,
-        isStarred: onlyStarredItems == true ? true : null,
-      ))
-          .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
-    }
-  }
-
-  @action
-  _loadAllMessages() async {
-    if (keyword.isEmpty) {
-      items.addAll((await storage.feedItemsDao.findItems(
-        limit: _limit,
-        offset: _offset,
-        isUnread: onlyUnreadItems == true ? true : null,
-        isStarred: onlyStarredItems == true ? true : null,
-      ))
-          .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
-    } else {
-      items.addAll((await storage.feedItemsDao.search(
-        keyword,
-        limit: _limit,
-        offset: _offset,
-        isUnread: onlyUnreadItems == true ? true : null,
-        isStarred: onlyStarredItems == true ? true : null,
-      ))
-          .map((e) => _mapSQLiteFeedItem(e, storage: storage)));
-    }
-  }
-
-  @action
   _load() async {
-    if (id == 0) {
-      await _loadAllMessages();
-    } else {
-      await _loadMessages();
+    if (keyword.isEmpty) {
+      var rows = await storage.feedItemsDao.findItems(
+        feedId: id > 0 ? id : null,
+        limit: _limit,
+        offset: _next,
+        isUnread: onlyUnreadItems == true ? true : null,
+        isStarred: onlyStarredItems == true ? true : null,
+      );
+      items.addAll(rows.map((e) => _mapSQLiteFeedItem(e, storage: storage)));
+      return;
     }
+
+    var rows = await storage.feedItemsDao.search(
+      keyword,
+      feedId: id > 0 ? id : null,
+      limit: _limit,
+      offset: _next,
+      isUnread: onlyUnreadItems == true ? true : null,
+      isStarred: onlyStarredItems == true ? true : null,
+    );
+    items.addAll(rows.map((e) => _mapSQLiteFeedItem(e, storage: storage)));
   }
 
   @action
   load() async {
     await _load();
-    _offset += _limit;
+    _prev = _next;
+    _next += _limit;
+  }
+
+  @action
+  reload() async {
+    _next = _prev;
+    items.clear();
+    await _load();
   }
 
   @action
   Future<void> search(String next) async {
     keyword = next;
-    _offset = 0;
+    _next = 0;
     items.clear();
     await _load();
   }

@@ -31,6 +31,7 @@ class _ExtraSettings extends StatelessWidget {
               value: feed.onlyUnreadItems,
               onChanged: (value) {
                 feed.onlyUnreadItems = value == true;
+                feed.reload();
               },
             );
           },
@@ -48,6 +49,7 @@ class _ExtraSettings extends StatelessWidget {
               value: feed.onlyStarredItems,
               onChanged: (value) {
                 feed.onlyStarredItems = value == true;
+                feed.reload();
               },
             );
           },
@@ -235,10 +237,12 @@ class FeedItemsListView extends StatefulWidget {
 
 class _FeedItemsListViewState extends State<FeedItemsListView> {
   bool _isListView = true;
+  model.FeedItem? _reading;
 
   @override
   Widget build(BuildContext context) {
     var feed = widget.feed;
+    var reading = _reading;
 
     return PageTransitionSwitcher(
       duration: const Duration(milliseconds: 400),
@@ -255,19 +259,23 @@ class _FeedItemsListViewState extends State<FeedItemsListView> {
           transitionType: SharedAxisTransitionType.vertical,
         );
       },
-      child: _isListView
+      child: reading == null
           ? _ListView(
               feed,
               (item) {
                 setState(() {
                   _isListView = false;
+                  _reading = item;
                 });
               },
             )
           : ItemContent(
+              reading,
+              feed,
               () {
                 setState(() {
                   _isListView = true;
+                  _reading = null;
                 });
               },
             ),

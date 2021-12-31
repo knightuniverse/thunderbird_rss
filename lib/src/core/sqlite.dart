@@ -96,7 +96,7 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
     with _$FeedItemsDaoMixin {
   FeedItemsDao(ThunderBirdRSSDataBase db) : super(db);
 
-  Future<List<FeedItem>> _findItems({
+  Future<List<FeedItem>> findItems({
     int limit = 20,
     int offset = 0,
     int? feedId,
@@ -128,20 +128,6 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
     return query.get();
   }
 
-  Future<List<FeedItem>> findItems({
-    int limit = 20,
-    int offset = 0,
-    bool? isUnread,
-    bool? isStarred,
-  }) {
-    return _findItems(
-      limit: limit,
-      offset: offset,
-      isUnread: isUnread,
-      isStarred: isStarred,
-    );
-  }
-
   Future<List<FeedItem>> findItemsOfFeed(
     int feedId, {
     int limit = 20,
@@ -149,7 +135,7 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
     bool? isUnread,
     bool? isStarred,
   }) {
-    return _findItems(
+    return findItems(
       limit: limit,
       offset: offset,
       feedId: feedId,
@@ -163,7 +149,7 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
     int offset = 0,
     bool? isStarred,
   }) {
-    return _findItems(
+    return findItems(
       limit: limit,
       offset: offset,
       isUnread: false,
@@ -176,7 +162,7 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
     int offset = 0,
     bool? isUnread,
   }) {
-    return _findItems(
+    return findItems(
       limit: limit,
       offset: offset,
       isUnread: isUnread,
