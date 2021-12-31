@@ -121,6 +121,33 @@ class _ListViewState extends State<_ListView> {
   Widget build(BuildContext context) {
     var feed = widget.feed;
     var items = feed.items;
+    // var empty = Container(
+    //   decoration: const BoxDecoration(
+    //     color: Color(0xFFFBFCFF),
+    //     borderRadius: BorderRadius.all(
+    //       Radius.circular(32),
+    //     ),
+    //   ),
+    //   constraints: const BoxConstraints(
+    //     maxWidth: 600,
+    //     minWidth: 200,
+    //     maxHeight: 450,
+    //     minHeight: 200,
+    //   ),
+    //   height: 300,
+    //   width: 400,
+    //   child: Column(
+    //     mainAxisAlignment: MainAxisAlignment.center,
+    //     crossAxisAlignment: CrossAxisAlignment.center,
+    //     children: [
+    //       Image.asset("assets/images/empty.png"),
+    //       Text(
+    //         "Your OS does not support iframes.",
+    //         style: Theme.of(context).textTheme.caption,
+    //       ),
+    //     ],
+    //   ),
+    // );
     var listView = Observer(
       builder: (BuildContext context) {
         return ListView.separated(

@@ -89,6 +89,10 @@ class FeedsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
   Future<int> insert(FeedsCompanion entry) {
     return into(feeds).insert(entry);
   }
+
+  Future<int> remove(int feedId) {
+    return (delete(feeds)..where((t) => t.id.equals(feedId))).go();
+  }
 }
 
 @DriftAccessor(tables: [FeedItems])
@@ -176,7 +180,7 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
 
   Future<void> insertAll(List<FeedItemsCompanion> entries) async {
     await batch((batch) {
-      batch.insertAll(feedItems, entries);
+      batch.insertAll(feedItems, entries, mode: InsertMode.replace);
     });
   }
 
@@ -288,5 +292,9 @@ class FeedItemsDao extends DatabaseAccessor<ThunderBirdRSSDataBase>
       );
 
     return query.get();
+  }
+
+  Future<int> removeItemsOfFeed(int feedId) {
+    return (delete(feedItems)..where((t) => t.feedId.equals(feedId))).go();
   }
 }

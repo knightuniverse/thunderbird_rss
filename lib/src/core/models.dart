@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:developer' as developer;
 
 import 'package:html/parser.dart' as htmlparser;
 import 'package:html/dom.dart' as dom;
@@ -12,8 +12,79 @@ import 'sqlite.dart' as sqlite;
 
 part 'models.g.dart';
 
-_parsePubDate(String pubDate) {
-  return DateFormat("EEE, dd MMM yyyy HH:mm:ss Z", "en_US").parse(pubDate);
+DateTime _parsePubDate(String pubDate) {
+  return DateFormat("EEE, dd MMM yyyy HH:mm:ss Z").parse(pubDate);
+}
+
+List<sqlite.FeedItemsCompanion> _atomItemsToInserts(
+  int feedId,
+  List<AtomItem> items,
+) {
+  var inserts = <sqlite.FeedItemsCompanion>[];
+  for (var item in items) {
+    try {
+      var content = item.content;
+      var pubDate = item.published;
+      var authors = item.authors;
+      var source = item.source;
+      var publishedAt =
+          pubDate != null ? DateTime.parse(pubDate) : DateTime.now();
+
+      inserts.add(
+        sqlite.FeedItemsCompanion.insert(
+          feedId: feedId,
+          title: item.title ?? "",
+          author:
+              authors.isNotEmpty ? authors.map((e) => e.name).join(",") : "",
+          source: source != null ? source.title ?? "" : "",
+          description: "",
+          content: content ?? "",
+          link: item.links.isNotEmpty ? item.links.first.href ?? "" : "",
+          guid: item.id ?? "",
+          publishedAt: publishedAt,
+        ),
+      );
+    } catch (e) {
+      developer.log(e.toString());
+      continue;
+    }
+  }
+  return inserts;
+}
+
+List<sqlite.FeedItemsCompanion> _rssItemsToInserts(
+  int feedId,
+  List<RssItem> items,
+) {
+  var inserts = <sqlite.FeedItemsCompanion>[];
+  for (var item in items) {
+    try {
+      var author = item.author;
+      var content = item.content;
+      var source = item.source;
+      var description = item.description;
+      var pubDate = item.pubDate;
+
+      inserts.add(
+        sqlite.FeedItemsCompanion.insert(
+          feedId: feedId,
+          title: item.title ?? "",
+          author: author ?? "",
+          source: source != null ? source.value : "",
+          description: description ?? "",
+          content: content != null ? content.value : description ?? "",
+          link: item.link ?? "",
+          guid: item.guid ?? "",
+          publishedAt:
+              pubDate != null ? _parsePubDate(pubDate) : DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      developer.log(e.toString());
+      continue;
+    }
+  }
+  return inserts;
 }
 
 _mapSQLiteFeedItem(
@@ -145,33 +216,10 @@ abstract class _FeedBase with Store {
   Future<void> _parseAtom(String xml) async {
     final channel = AtomFeed.parse(xml);
     final feedId = id;
-    final inserts = channel.items.map(
-      (e) {
-        var content = e.content;
-        var pubDate = e.published;
-        var authors = e.authors;
-        var source = e.source;
-
-        return sqlite.FeedItemsCompanion.insert(
-          feedId: feedId,
-          title: e.title ?? "",
-          author:
-              authors.isNotEmpty ? authors.map((e) => e.name).join(",") : "",
-          source: source != null ? source.title ?? "" : "",
-          description: "",
-          content: content ?? "",
-          link: e.links.isNotEmpty ? e.links.first.href ?? "" : "",
-          guid: e.id ?? "",
-          publishedAt:
-              pubDate != null ? DateTime.parse(pubDate) : DateTime.now(),
-        );
-      },
-    ).toList();
-
+    final inserts = _atomItemsToInserts(feedId, channel.items);
     unreadItemCount += inserts.length;
 
     await storage.feedItemsDao.insertAll(inserts);
-
     await load();
   }
 
@@ -179,33 +227,10 @@ abstract class _FeedBase with Store {
   Future<void> _parseRSS(String xml) async {
     final channel = RssFeed.parse(xml);
     final feedId = id;
-    final inserts = channel.items.map(
-      (e) {
-        var author = e.author;
-        var content = e.content;
-        var source = e.source;
-        var description = e.description;
-        var pubDate = e.pubDate;
-
-        return sqlite.FeedItemsCompanion.insert(
-          feedId: feedId,
-          title: e.title ?? "",
-          author: author ?? "",
-          source: source != null ? source.value : "",
-          description: description ?? "",
-          content: content != null ? content.value : description ?? "",
-          link: e.link ?? "",
-          guid: e.guid ?? "",
-          publishedAt:
-              pubDate != null ? _parsePubDate(pubDate) : DateTime.now(),
-        );
-      },
-    ).toList();
-
+    final inserts = _rssItemsToInserts(feedId, channel.items);
     unreadItemCount += inserts.length;
 
     await storage.feedItemsDao.insertAll(inserts);
-
     await load();
   }
 
@@ -347,6 +372,10 @@ abstract class _AppBase with Store {
       ),
     );
 
+    await storage.feedItemsDao.insertAll(
+      _atomItemsToInserts(feedId, channel.items),
+    );
+
     final feed = Feed(
       storage,
       id: feedId,
@@ -355,31 +384,6 @@ abstract class _AppBase with Store {
       link: channel.links.isNotEmpty ? channel.links.first.href ?? "" : "",
       url: feedUrl,
       icon: channel.icon ?? "",
-    );
-
-    await storage.feedItemsDao.insertAll(
-      channel.items.map(
-        (e) {
-          var content = e.content;
-          var pubDate = e.published;
-          var authors = e.authors;
-          var source = e.source;
-
-          return sqlite.FeedItemsCompanion.insert(
-            feedId: feedId,
-            title: e.title ?? "",
-            author:
-                authors.isNotEmpty ? authors.map((e) => e.name).join(",") : "",
-            source: source != null ? source.title ?? "" : "",
-            description: "",
-            content: content ?? "",
-            link: e.links.isNotEmpty ? e.links.first.href ?? "" : "",
-            guid: e.id ?? "",
-            publishedAt:
-                pubDate != null ? DateTime.parse(pubDate) : DateTime.now(),
-          );
-        },
-      ).toList(),
     );
 
     await feed.collectStatistics();
@@ -393,30 +397,10 @@ abstract class _AppBase with Store {
   Future<void> _subscribeRSS(String feedUrl, String xml) async {
     final channel = RssFeed.parse(xml);
 
-    String icon = "";
+    String favIcon = "";
     final source = channel.link;
     if (source != null) {
-      final html = await http.get(Uri.parse(source));
-      final dom.Document document = htmlparser.parse(html.body);
-      final head = document.getElementsByTagName("head").first;
-      head.getElementsByTagName("link").forEach((element) {
-        RegExp iconPattern = RegExp(
-          r"(\.jpg|\.png|\.ico)$",
-          caseSensitive: false,
-        );
-
-        for (var value in element.attributes.values) {
-          if (iconPattern.hasMatch(value)) {
-            icon = value;
-          }
-        }
-      });
-
-      icon = icon.startsWith("https:") || icon.startsWith("http:")
-          ? icon
-          : icon.startsWith("//")
-              ? Uri.parse(source).scheme + ":" + icon
-              : Uri.parse(source + icon).toString();
+      favIcon = await _fetchFavIcon(source);
     }
 
     final feedId = await storage.feedsDao.insert(
@@ -425,8 +409,12 @@ abstract class _AppBase with Store {
         description: channel.description ?? "",
         link: channel.link ?? "",
         url: feedUrl,
-        icon: icon,
+        icon: favIcon,
       ),
+    );
+
+    await storage.feedItemsDao.insertAll(
+      _rssItemsToInserts(feedId, channel.items),
     );
 
     final feed = Feed(
@@ -436,32 +424,7 @@ abstract class _AppBase with Store {
       description: channel.description ?? "",
       link: channel.link ?? "",
       url: feedUrl,
-      icon: icon,
-    );
-
-    await storage.feedItemsDao.insertAll(
-      channel.items.map(
-        (e) {
-          var author = e.author;
-          var content = e.content;
-          var source = e.source;
-          var description = e.description;
-          var pubDate = e.pubDate;
-
-          return sqlite.FeedItemsCompanion.insert(
-            feedId: feedId,
-            title: e.title ?? "",
-            author: author ?? "",
-            source: source != null ? source.value : "",
-            description: description ?? "",
-            content: content != null ? content.value : description ?? "",
-            link: e.link ?? "",
-            guid: e.guid ?? "",
-            publishedAt:
-                pubDate != null ? _parsePubDate(pubDate) : DateTime.now(),
-          );
-        },
-      ).toList(),
+      icon: favIcon,
     );
 
     await feed.collectStatistics();
@@ -479,12 +442,12 @@ abstract class _AppBase with Store {
     final isRss = doc.findAllElements('rss').isNotEmpty;
     final isAtom = doc.findAllElements('feed').isNotEmpty;
 
-    if (isRss) {
-      return _subscribeRSS(feedUrl, xml);
-    }
-
     if (isAtom) {
       return _subscribeAtom(feedUrl, xml);
+    }
+
+    if (isRss) {
+      return _subscribeRSS(feedUrl, xml);
     }
   }
 
@@ -545,5 +508,38 @@ abstract class _AppBase with Store {
 
   Feed? findFeed(int id) {
     return _feedMap[id];
+  }
+
+  Future<String> _fetchFavIcon(String source) async {
+    String favIcon = "";
+
+    final html = await http.get(Uri.parse(source));
+    final dom.Document document = htmlparser.parse(html.body);
+    final head = document.getElementsByTagName("head").first;
+    head.getElementsByTagName("link").forEach((element) {
+      RegExp iconPattern = RegExp(
+        r"(\.jpg|\.png|\.ico)$",
+        caseSensitive: false,
+      );
+
+      for (var value in element.attributes.values) {
+        if (iconPattern.hasMatch(value)) {
+          favIcon = value;
+        }
+      }
+    });
+
+    if (favIcon.startsWith("https:") || favIcon.startsWith("http:")) {
+      return favIcon;
+    }
+
+    if (favIcon.startsWith("//")) {
+      favIcon = Uri.parse(source).scheme + ":" + favIcon;
+      return favIcon;
+    }
+
+    favIcon = Uri.parse(source).origin +
+        (favIcon.startsWith("/") ? "/$favIcon" : favIcon);
+    return favIcon;
   }
 }

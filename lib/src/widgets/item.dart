@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:html/parser.dart' as htmlparser;
 import 'package:intl/intl.dart';
 
@@ -10,7 +13,13 @@ typedef OnSelectionChange = void Function(model.FeedItem item, bool selected);
 void _onTap() {}
 void _onSelectionChange(model.FeedItem item, bool selected) {}
 
-enum _FeedItemAction { markAsRead, remove, star, markAsUnread }
+enum _FeedItemAction {
+  markAsRead,
+  markAsUnread,
+  remove,
+  star,
+  unstar,
+}
 
 class _Actions extends StatelessWidget {
   final model.Feed feed;
@@ -20,33 +29,38 @@ class _Actions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton(
-      icon: const Icon(Icons.more_vert),
-      onSelected: (_FeedItemAction result) {
-        //  TODO 收藏，删除，设置已读，设置未读
-      },
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<_FeedItemAction>>[
-        const PopupMenuItem<_FeedItemAction>(
-          value: _FeedItemAction.markAsRead,
-          child: ListTile(
-            leading: Icon(Icons.check),
-            title: Text('Mark as read'),
-          ),
-        ),
-        const PopupMenuItem<_FeedItemAction>(
-          value: _FeedItemAction.markAsUnread,
-          child: ListTile(
-            leading: Icon(Icons.mark_as_unread),
-            title: Text('Mark as unread'),
-          ),
-        ),
-        const PopupMenuItem<_FeedItemAction>(
-          value: _FeedItemAction.star,
-          child: ListTile(
-            leading: Icon(Icons.star),
-            title: Text('Star'),
-          ),
-        ),
+    return Observer(builder: (BuildContext context) {
+      var actions = <PopupMenuEntry<_FeedItemAction>>[
+        item.read
+            ? const PopupMenuItem<_FeedItemAction>(
+                value: _FeedItemAction.markAsUnread,
+                child: ListTile(
+                  leading: Icon(Icons.mark_as_unread),
+                  title: Text('Mark as unread'),
+                ),
+              )
+            : const PopupMenuItem<_FeedItemAction>(
+                value: _FeedItemAction.markAsRead,
+                child: ListTile(
+                  leading: Icon(Icons.check),
+                  title: Text('Mark as read'),
+                ),
+              ),
+        item.starred
+            ? const PopupMenuItem<_FeedItemAction>(
+                value: _FeedItemAction.unstar,
+                child: ListTile(
+                  leading: Icon(Icons.star),
+                  title: Text('Star'),
+                ),
+              )
+            : const PopupMenuItem<_FeedItemAction>(
+                value: _FeedItemAction.star,
+                child: ListTile(
+                  leading: Icon(Icons.star),
+                  title: Text('Star'),
+                ),
+              ),
         const PopupMenuItem<_FeedItemAction>(
           value: _FeedItemAction.remove,
           child: ListTile(
@@ -54,8 +68,37 @@ class _Actions extends StatelessWidget {
             title: Text('Remove'),
           ),
         ),
-      ],
-    );
+      ];
+
+      return PopupMenuButton(
+        icon: const Icon(Icons.more_vert),
+        onSelected: (_FeedItemAction result) {
+          //  TODO 收藏，删除，设置已读，设置未读
+
+          switch (result) {
+            case _FeedItemAction.markAsRead:
+              item.setRead();
+              break;
+            case _FeedItemAction.markAsUnread:
+              item.setUnread();
+              break;
+            case _FeedItemAction.star:
+              item.setStarred();
+              break;
+            case _FeedItemAction.unstar:
+              item.setUnread();
+              break;
+            case _FeedItemAction.remove:
+              break;
+            default:
+              break;
+          }
+
+          log(result.toString());
+        },
+        itemBuilder: (BuildContext context) => actions,
+      );
+    });
   }
 }
 
@@ -102,7 +145,8 @@ class _FeedItemState extends State<FeedItem> {
     """);
     var body = document.getElementsByTagName("body").first;
     var images = document.getElementsByTagName("img");
-    var headImage = images.first.attributes["src"] ?? "";
+    var headImage =
+        images.isNotEmpty ? images.first.attributes["src"] ?? "" : "";
 
     return GestureDetector(
       onTap: widget.onTap,

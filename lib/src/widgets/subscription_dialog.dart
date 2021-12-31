@@ -1,11 +1,25 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:form_validator/form_validator.dart';
 import 'package:get_it/get_it.dart';
 
-class SubscriptionDialog extends StatelessWidget {
+import 'package:thunderbird_rss/src/core/models.dart' as model;
+
+class SubscriptionDialog extends StatefulWidget {
   const SubscriptionDialog({Key? key}) : super(key: key);
 
   @override
+  _SubscriptionDialogState createState() => _SubscriptionDialogState();
+}
+
+class _SubscriptionDialogState extends State<SubscriptionDialog> {
+  final GlobalKey _formKey = GlobalKey<FormState>();
+  final TextEditingController _controller = TextEditingController();
+
+  @override
   Widget build(BuildContext context) {
+    final app = GetIt.I.get<model.App>();
     final DialogTheme dialogTheme = DialogTheme.of(context);
     final ThemeData theme = Theme.of(context);
 
@@ -39,12 +53,15 @@ class SubscriptionDialog extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(right: 16, left: 16),
                   child: Form(
+                    key: _formKey,
                     child: TextFormField(
-                      decoration: InputDecoration(
+                      controller: _controller,
+                      decoration: const InputDecoration(
                         labelText: "URL",
                         hintText: "Feed URL",
                         icon: Icon(Icons.rss_feed),
                       ),
+                      validator: ValidationBuilder().url().build(),
                     ),
                   ),
                 ),
@@ -63,7 +80,12 @@ class SubscriptionDialog extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () async {
+                          if ((_formKey.currentState as FormState).validate()) {
+                            await app.subscribe(_controller.text);
+                            Navigator.pop(context);
+                          }
+                        },
                         child: const Text("Ok"),
                       ),
                     ],

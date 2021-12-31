@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'package:thunderbird_rss/src/core/models.dart' as model;
 
@@ -53,6 +54,15 @@ class ItemContent extends StatelessWidget {
     final isDesktopPlatform =
         Platform.isMacOS || Platform.isLinux || Platform.isWindows;
 
+    final overlines = <String>[];
+    overlines.add(DateFormat('yyyy-MM-dd kk:mm').format(item.publishedAt));
+    if (item.source.isNotEmpty) {
+      overlines.add(item.source);
+    }
+    if (item.author.isNotEmpty) {
+      overlines.add("By ${item.author}");
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.start,
@@ -68,25 +78,31 @@ class ItemContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Lorem Ipsum",
-                        style: Theme.of(context).textTheme.headline5,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "2021/12/20 12:30 / CNBETA / By milo",
-                        style: Theme.of(context).textTheme.overline,
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          item.title,
+                          softWrap: true,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.headline5,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          overlines.join(" / "),
+                          style: Theme.of(context).textTheme.overline,
+                        ),
+                      ],
+                    ),
                   ),
                   Row(
                     children: [
                       IconButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          //  TODO item star
+                        },
                         icon: const Icon(Icons.star),
                       ),
                       IconButton(
@@ -109,24 +125,6 @@ class ItemContent extends StatelessWidget {
         Expanded(
           child: SizedBox(
             width: 840,
-            // child: RichText(
-            //   text: TextSpan(
-            //     children: [
-            //       TextSpan(
-            //           style: Theme.of(context).textTheme.bodyText2,
-            //           text:
-            //               "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras commodo cursus mi, vitae porta elit. Sed neque tellus, luctus a commodo non, interdum luctus nulla. Etiam vel fermentum erat. Nullam aliquet blandit placerat. Duis efficitur gravida tortor, pulvinar rhoncus velit mollis in. Etiam non iaculis augue. Ut egestas aliquet gravida. In hac habitasse platea dictumst. Morbi ultrices ex quis consectetur posuere. In hac habitasse platea dictumst. Curabitur nec lacinia nisi, porttitor venenatis ex. Duis ut porta orci, a venenatis felis."),
-            //       TextSpan(
-            //           style: Theme.of(context).textTheme.bodyText2,
-            //           text:
-            //               "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras commodo cursus mi, vitae porta elit. Sed neque tellus, luctus a commodo non, interdum luctus nulla. Etiam vel fermentum erat. Nullam aliquet blandit placerat. Duis efficitur gravida tortor, pulvinar rhoncus velit mollis in. Etiam non iaculis augue. Ut egestas aliquet gravida. In hac habitasse platea dictumst. Morbi ultrices ex quis consectetur posuere. In hac habitasse platea dictumst. Curabitur nec lacinia nisi, porttitor venenatis ex. Duis ut porta orci, a venenatis felis."),
-            //       TextSpan(
-            //           style: Theme.of(context).textTheme.bodyText2,
-            //           text:
-            //               "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras commodo cursus mi, vitae porta elit. Sed neque tellus, luctus a commodo non, interdum luctus nulla. Etiam vel fermentum erat. Nullam aliquet blandit placerat. Duis efficitur gravida tortor, pulvinar rhoncus velit mollis in. Etiam non iaculis augue. Ut egestas aliquet gravida. In hac habitasse platea dictumst. Morbi ultrices ex quis consectetur posuere. In hac habitasse platea dictumst. Curabitur nec lacinia nisi, porttitor venenatis ex. Duis ut porta orci, a venenatis felis."),
-            //     ],
-            //   ),
-            // ),
             child: SingleChildScrollView(
               child: Html(
                 customRender: isDesktopPlatform
